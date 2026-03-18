@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kingsley Hills SL-05b</title>
+<style>
+:root {
+  --navy:#1F3864; --blue:#2E75B6; --lblue:#D5E8F0;
+  --g50:#F9FAFB; --g100:#F3F4F6; --g200:#E5E7EB; --g300:#D1D5DB;
+  --g400:#9CA3AF; --g500:#6B7280; --g700:#374151; --g900:#111827;
+  --green:#16A34A; --green-bg:#DCFCE7;
+  --amber:#D97706; --amber-bg:#FEF3C7;
+  --red:#DC2626; --red-bg:#FEE2E2;
+  --purple:#7C3AED; --purple-bg:#EDE9FE;
+  --shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow-lg:0 10px 25px rgba(0,0,0,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--g100);color:var(--g900);font-size:14px;min-height:100vh}
+
+/* ── Login ── */
+#login-screen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:999}
+.login-box{background:#fff;border-radius:12px;padding:40px 36px;width:340px;text-align:center;box-shadow:var(--shadow-lg)}
+.login-logo{font-size:36px;margin-bottom:12px}
+.login-box h2{font-size:18px;color:var(--navy);margin-bottom:4px}
+.login-box p{font-size:12px;color:var(--g500);margin-bottom:24px}
+.login-box input{width:100%;padding:10px;border:1px solid var(--g300);border-radius:6px;font-size:16px;text-align:center;letter-spacing:4px;margin-bottom:12px}
+.login-box input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,117,182,.12)}
+.login-name{display:none;margin-bottom:12px}
+.login-name input{letter-spacing:normal}
+#login-error{font-size:12px;color:var(--red);min-height:18px;margin-bottom:8px}
+
+/* ── Header ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+header{background:var(--navy);color:#fff;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.header-left h1{font-size:15px;font-weight:700}
+.header-left span{font-size:11px;opacity:.6}
+.header-right{display:flex;align-items:center;gap:10px}
+#user-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:12px;color:#fff;cursor:pointer;white-space:nowrap}
+#user-badge:hover{background:rgba(255,255,255,.2)}
+
+/* ── Tabs ── */
+nav#tabs{background:var(--navy);display:flex;padding:0 20px;border-bottom:2px solid rgba(255,255,255,.08)}
+.tab{padding:10px 18px;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none}
+.tab:hover{color:rgba(255,255,255,.9)}
+.tab.active{color:#fff;border-bottom-color:#60A5FA}
+
+/* ── Content ── */
+#content{flex:1;max-width:1240px;margin:0 auto;padding:20px;width:100%}
+.module{display:none}.module.active{display:block}
+
+/* ── Stats bar ── */
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:#fff;border-radius:8px;padding:14px 16px;box-shadow:var(--shadow);text-align:center}
+.stat .val{font-size:22px;font-weight:700;color:var(--navy)}
+.stat .lbl{font-size:10px;color:var(--g500);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+
+/* ── Card ── */
+.card{background:#fff;border-radius:8px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+.card-hdr{background:var(--navy);color:#fff;padding:11px 16px;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:space-between}
+.card-hdr.blue{background:var(--blue)}
+
+/* ── Progress ── */
+.progress{height:5px;background:var(--g200);border-radius:3px;overflow:hidden;margin-top:5px}
+.progress-fill{height:100%;background:var(--blue);border-radius:3px;transition:width .4s}
+.progress-fill.green{background:var(--green)}
+
+/* ── Phase accordion ── */
+.phase-hdr{background:var(--blue);color:#fff;padding:9px 16px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.phase-hdr:hover{background:#2563a8}
+.phase-hdr .chevron{transition:transform .2s;display:inline-block}
+.phase-hdr.collapsed .chevron{transform:rotate(-90deg)}
+.phase-body{overflow:hidden;transition:max-height .25s ease}
+.phase-body.collapsed{max-height:0!important}
+
+/* ── Task row ── */
+.task-row{display:grid;grid-template-columns:28px 1fr 110px 100px 110px 30px;gap:6px;align-items:start;padding:9px 16px;border-bottom:1px solid var(--g100)}
+.task-row:last-child{border-bottom:none}
+.task-row:hover{background:var(--g50)}
+.task-num{font-size:10px;color:var(--g400);font-weight:600;padding-top:2px}
+.task-main .task-name{font-size:13px;font-weight:500}
+.task-main .task-detail{font-size:11px;color:var(--g500);margin-top:2px;line-height:1.4}
+.task-main .task-notes{font-size:11px;color:var(--blue);margin-top:4px;padding:4px 8px;background:var(--lblue);border-radius:4px;display:none}
+.task-main .task-notes.visible{display:block}
+.task-cost{font-size:11px;color:var(--g500);padding-top:2px}
+.task-date input{font-size:11px;padding:3px 6px;border:1px solid var(--g300);border-radius:4px;width:100%;color:var(--g700)}
+.task-row.done .task-name{text-decoration:line-through;color:var(--g400)}
+.status-sel{font-size:11px;padding:3px 5px;border:1px solid var(--g300);border-radius:4px;background:#fff;cursor:pointer;width:100%}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--g400);padding:2px;border-radius:4px}
+.icon-btn:hover{color:var(--g700);background:var(--g100)}
+.add-task-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;font-size:12px;color:var(--blue);cursor:pointer;border-bottom:1px solid var(--g100)}
+.add-task-btn:hover{background:var(--g50)}
+
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--g50);padding:9px 12px;text-align:left;font-weight:600;color:var(--g700);border-bottom:1px solid var(--g200);white-space:nowrap;font-size:12px}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--g100);vertical-align:middle}
+tbody tr:hover{background:var(--g50)}
+tbody tr:last-child td{border-bottom:none}
+.num-cell{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-done,.badge-completed,.badge-installed{background:var(--green-bg);color:var(--green)}
+.badge-progress,.badge-ordered{background:var(--amber-bg);color:var(--amber)}
+.badge-blocked,.badge-hold{background:var(--red-bg);color:var(--red)}
+.badge-pending,.badge-start,.badge-procure{background:var(--g100);color:var(--g500)}
+.badge-delivered{background:var(--purple-bg);color:var(--purple)}
+
+/* ── Buttons ── */
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1e5a9e}
+.btn-secondary{background:#fff;color:var(--g700);border:1px solid var(--g300)}.btn-secondary:hover{background:var(--g50)}
+.btn-danger{background:#fff;color:var(--red);border:1px solid #FECACA}.btn-danger:hover{background:var(--red-bg)}
+.btn-sm{padding:4px 10px;font-size:12px}
+.action-group{display:flex;gap:4px}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.toolbar-left{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter-sel{font-size:12px;padding:5px 8px;border:1px solid var(--g300);border-radius:6px;background:#fff;color:var(--g700)}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;box-shadow:var(--shadow-lg);width:580px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-hdr{background:var(--navy);color:#fff;padding:15px 20px;border-radius:10px 10px 0 0;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:space-between}
+.modal-body{padding:20px}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--g200);display:flex;gap:8px;justify-content:flex-end}
+.close-btn{background:none;border:none;color:rgba(255,255,255,.7);font-size:22px;cursor:pointer;line-height:1}.close-btn:hover{color:#fff}
+
+/* ── Form ── */
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--g700);margin-bottom:4px}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border:1px solid var(--g300);border-radius:6px;font-size:13px;font-family:inherit;color:var(--g900)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,117,182,.1)}
+.fg textarea{resize:vertical;min-height:72px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* ── Scratchpad ── */
+.scratch-compose{background:#fff;border-radius:8px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+.scratch-compose-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.author-badge{font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:var(--lblue);color:var(--navy)}
+.scratch-compose textarea{width:100%;border:1px solid var(--g300);border-radius:6px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;min-height:80px}
+.scratch-compose textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,117,182,.1)}
+.scratch-compose-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.scratch-entry{background:#fff;border-radius:8px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid var(--blue)}
+.scratch-entry.contractor{border-left-color:var(--purple)}
+.scratch-meta{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.scratch-author{font-size:12px;font-weight:700;color:var(--blue)}
+.scratch-entry.contractor .scratch-author{color:var(--purple)}
+.scratch-time{font-size:11px;color:var(--g400)}
+.scratch-text{font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;color:#fff;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:300px}
+#toast.show{opacity:1}
+#toast.success{background:#16A34A}#toast.error{background:#DC2626}
+
+/* ── Alerts ── */
+.alert{padding:9px 13px;border-radius:6px;font-size:12px;margin-bottom:12px;border-left:3px solid;line-height:1.5}
+.alert-warn{background:#FFFBEB;color:#92400E;border-color:#F59E0B}
+.alert-info{background:var(--lblue);color:#1E3A5F;border-color:var(--blue)}
+
+/* ── Misc ── */
+.empty{text-align:center;padding:36px 20px;color:var(--g400)}
+.empty .icon{font-size:32px;margin-bottom:8px}
+.section-label{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;padding:8px 12px;background:var(--g50);border-bottom:1px solid var(--g200)}
+.cost-summary{display:flex;gap:8px;padding:10px 16px;background:var(--g50);border-top:1px solid var(--g200);font-size:12px;flex-wrap:wrap}
+.cost-summary span{color:var(--g500)}
+.cost-summary strong{color:var(--navy)}
+
+@media(max-width:700px){
+  .stats-bar{grid-template-columns:1fr 1fr}
+  .task-row{grid-template-columns:20px 1fr 90px}
+  .task-row .task-cost,.task-row .task-date,.task-row .icon-btn:last-child{display:none}
+  .grid2,.grid3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🏡</div>
+    <h2>Kingsley Hills SL-05b</h2>
+    <p>Property Manager — enter your PIN to continue</p>
+    <div id="login-step-pin">
+      <input type="password" id="pin-input" placeholder="PIN" maxlength="20" onkeydown="if(event.key==='Enter')checkPin()">
+      <div id="login-error">&nbsp;</div>
+      <button class="btn btn-primary" style="width:100%" onclick="checkPin()">Continue →</button>
+    </div>
+    <div id="login-step-name" style="display:none">
+      <input type="text" id="name-input" placeholder="Your name (e.g. Marcus)" maxlength="40"
+        onkeydown="if(event.key==='Enter')setName()">
+      <div id="login-error-2">&nbsp;</div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="setName()">Enter →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ════════════════════════════════════════════════════════════════════ -->
+<div id="app" style="display:none;flex-direction:column">
+
+  <header>
+    <div class="header-left">
+      <h1>Kingsley Hills SL-05b</h1>
+      <span>Property Manager</span>
+    </div>
+    <div class="header-right">
+      <span id="user-badge" onclick="switchUser()" title="Click to switch user">👤 <span id="username-display">—</span></span>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:none;font-size:11px" onclick="openSettings()">⚙ Settings</button>
+    </div>
+  </header>
+
+  <nav id="tabs">
+    <button class="tab active" onclick="showMod('plan')">📋 Action Plan</button>
+    <button class="tab" onclick="showMod('inventory')">📦 Inventory</button>
+    <button class="tab" onclick="showMod('reno')">🔨 Renovation</button>
+    <button class="tab" onclick="showMod('scratch')">📝 Scratchpad</button>
+  </nav>
+
+  <div id="content">
+
+    <!-- ── ACTION PLAN ──────────────────────────────────────────────────── -->
+    <div id="mod-plan" class="module active">
+      <div class="stats-bar" id="plan-stats"></div>
+      <div class="alert alert-warn">⚠ <strong>Check Letter of Offer expiry immediately.</strong> Do NOT reveal the RM 1.89M loan ceiling. Anchor at RM 1.9M → RM 2.0M → walk away at RM 2.1M.</div>
+      <div id="plan-phases"></div>
+    </div>
+
+    <!-- ── INVENTORY ────────────────────────────────────────────────────── -->
+    <div id="mod-inventory" class="module">
+      <div class="stats-bar" id="inv-stats"></div>
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select class="filter-sel" id="inv-cat-filter" onchange="renderInventory()">
+            <option value="">All Categories</option>
+            <option>Waterproofing & Structural</option>
+            <option>Electrical</option>
+            <option>Plumbing & Sanitary</option>
+            <option>Flooring</option>
+            <option>Painting & Plastering</option>
+            <option>Doors & Windows</option>
+            <option>Kitchen</option>
+            <option>Bathrooms</option>
+            <option>Air Conditioning</option>
+            <option>Furniture</option>
+            <option>Appliances</option>
+            <option>Landscaping</option>
+            <option>Miscellaneous</option>
+          </select>
+          <select class="filter-sel" id="inv-status-filter" onchange="renderInventory()">
+            <option value="">All Statuses</option>
+            <option>To Procure</option>
+            <option>Ordered</option>
+            <option>Delivered</option>
+            <option>Installed</option>
+            <option>On Hold</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openInvModal()">＋ Add Item</button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Category</th><th>Item</th><th>Qty</th><th>Unit</th>
+              <th class="num-cell">Unit Price (RM)</th><th class="num-cell">Total (RM)</th>
+              <th>Supplier</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="inv-tbody"></tbody>
+          </table>
+        </div>
+        <div class="cost-summary" id="inv-footer"></div>
+      </div>
+    </div>
+
+    <!-- ── RENOVATION ───────────────────────────────────────────────────── -->
+    <div id="mod-reno" class="module">
+      <div class="stats-bar" id="reno-stats"></div>
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select class="filter-sel" id="reno-area-filter" onchange="renderReno()">
+            <option value="">All Areas</option>
+            <option>Roof</option>
+            <option>First Floor</option>
+            <option>Ground Floor</option>
+            <option>Lower Ground 1 (LG1)</option>
+            <option>Lower Ground 2 (LG2)</option>
+            <option>Exterior / Facade</option>
+            <option>All Areas</option>
+          </select>
+          <select class="filter-sel" id="reno-status-filter" onchange="renderReno()">
+            <option value="">All Statuses</option>
+            <option>Not Started</option>
+            <option>In Progress</option>
+            <option>Completed</option>
+            <option>On Hold</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openRenoModal()">＋ Add Work Item</button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Area</th><th>Description</th><th>Tradesman</th><th>Status</th>
+              <th class="num-cell">Est. Cost (RM)</th><th class="num-cell">Actual (RM)</th>
+              <th>Timeline</th><th></th>
+            </tr></thead>
+            <tbody id="reno-tbody"></tbody>
+          </table>
+        </div>
+        <div class="cost-summary" id="reno-footer"></div>
+      </div>
+    </div>
+
+    <!-- ── SCRATCHPAD ───────────────────────────────────────────────────── -->
+    <div id="mod-scratch" class="module">
+      <div class="scratch-compose">
+        <div class="scratch-compose-top">
+          <span class="author-badge" id="compose-author">—</span>
+          <span style="font-size:12px;color:var(--g500)">New note</span>
+        </div>
+        <textarea id="scratch-text" placeholder="Write a note, decision, measurement, or reminder…"></textarea>
+        <div class="scratch-compose-footer">
+          <span id="scratch-tip" style="font-size:11px;color:var(--g400)">Visible to everyone</span>
+          <button class="btn btn-primary btn-sm" onclick="postScratch()">Post Note</button>
+        </div>
+      </div>
+      <div id="scratch-entries"></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- ══ MODAL ════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-hdr"><span id="modal-title">—</span><button class="close-btn" onclick="closeModal()">×</button></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modal-save" onclick="modalSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modal-hdr"><span>Settings</span><button class="close-btn" onclick="closeSettings()">×</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>Contractor Name (shown in scratchpad)</label>
+        <input type="text" id="set-contractor" placeholder="e.g. Ahmad / Main Contractor"></div>
+      <div class="grid2">
+        <div class="fg"><label>Renovation Budget (RM)</label>
+          <input type="number" id="set-reno-budget" placeholder="150000"></div>
+        <div class="fg"><label>Inventory Budget (RM)</label>
+          <input type="number" id="set-inv-budget" placeholder="100000"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══ State ════════════════════════════════════════════════════════════════════
+let S = { tasks:[], inventory:[], reno:[], scratchpad:[], settings:{} };
+let currentUser = '';
+let storedPin   = '';
+let modalCtx    = null;
+
+const PHASES = [
+  { id:'p1', label:'Phase 1 — Pre-Offer' },
+  { id:'p2', label:'Phase 2 — Inspection Day' },
+  { id:'p3', label:'Phase 3 — Post-Inspection & Offer' },
+  { id:'p4', label:'Phase 4 — SPA & Loan Agreement' },
+  { id:'p5', label:'Phase 5 — Move-In Preparation' },
+];
+
+const INV_CATEGORIES = ['Waterproofing & Structural','Electrical','Plumbing & Sanitary',
+  'Flooring','Painting & Plastering','Doors & Windows','Kitchen','Bathrooms',
+  'Air Conditioning','Furniture','Appliances','Landscaping','Miscellaneous'];
+
+const RENO_AREAS = ['Roof','First Floor','Ground Floor','Lower Ground 1 (LG1)',
+  'Lower Ground 2 (LG2)','Exterior / Facade','All Areas'];
+
+const STATUS_TASK = ['Not Started','In Progress','Done','Blocked'];
+const STATUS_INV  = ['To Procure','Ordered','Delivered','Installed','On Hold'];
+const STATUS_RENO = ['Not Started','In Progress','Completed','On Hold'];
+
+// ══ Auth ════════════════════════════════════════════════════════════════════
+async function checkPin() {
+  const pin = document.getElementById('pin-input').value.trim();
+  if (!pin) return;
+  try {
+    const r = await fetch('/api/auth', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pin}) });
+    if (r.ok) {
+      storedPin = pin;
+      document.getElementById('login-step-pin').style.display = 'none';
+      document.getElementById('login-step-name').style.display = 'block';
+      document.getElementById('login-error').innerHTML = '&nbsp;';
+      setTimeout(() => document.getElementById('name-input').focus(), 50);
+    } else {
+      document.getElementById('login-error').textContent = 'Incorrect PIN — try again';
+    }
+  } catch(e) {
+    document.getElementById('login-error').textContent = 'Cannot reach server';
+  }
+}
+
+function setName() {
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) { document.getElementById('login-error-2').textContent = 'Please enter your name'; return; }
+  currentUser = name;
+  sessionStorage.setItem('kh_pin', storedPin);
+  sessionStorage.setItem('kh_user', name);
+  launchApp();
+}
+
+function switchUser() {
+  sessionStorage.removeItem('kh_user');
+  location.reload();
+}
+
+// ══ API helpers ══════════════════════════════════════════════════════════════
+const A = {
+  h: () => ({ 'Content-Type':'application/json', 'Authorization':'Bearer '+storedPin }),
+  get:  async u => { const r = await fetch(u,{headers:A.h()}); if(r.status===401){location.reload();return null} return r.json() },
+  post: async (u,b) => { const r = await fetch(u,{method:'POST',headers:A.h(),body:JSON.stringify(b)}); return r.json() },
+  put:  async (u,b) => { const r = await fetch(u,{method:'PUT',headers:A.h(),body:JSON.stringify(b)}); return r.json() },
+  del:  async u => { const r = await fetch(u,{method:'DELETE',headers:A.h()}); return r.json() },
+};
+
+// ══ Launch ═══════════════════════════════════════════════════════════════════
+async function launchApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('username-display').textContent = currentUser;
+  document.getElementById('compose-author').textContent = currentUser;
+  await loadAll();
+}
+
+async function loadAll() {
+  const [tr, ti, trn, ts, tset] = await Promise.all([
+    A.get('/api/tasks'), A.get('/api/inventory'), A.get('/api/reno'),
+    A.get('/api/scratchpad'), A.get('/api/settings'),
+  ]);
+  if (!tr) return;
+  S.tasks     = tr.tasks;
+  S.inventory = ti.items;
+  S.reno      = trn.works;
+  S.scratchpad = ts.entries;
+  S.settings  = tset.settings;
+  renderPlan(); renderInventory(); renderReno(); renderScratch();
+}
+
+// ══ Navigation ══════════════════════════════════════════════════════════════
+function showMod(id) {
+  document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('mod-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ══ FORMAT helpers ══════════════════════════════════════════════════════════
+function fmtRM(n) { return Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function fmtDate(d) { return d ? new Date(d+'T00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}) : ''; }
+
+function badgeTask(s) {
+  const m = {'Not Started':'badge-start','In Progress':'badge-progress','Done':'badge-done','Blocked':'badge-blocked'};
+  return `<span class="badge ${m[s]||'badge-start'}">${s}</span>`;
+}
+function badgeInv(s) {
+  const m = {'To Procure':'badge-procure','Ordered':'badge-ordered','Delivered':'badge-delivered','Installed':'badge-installed','On Hold':'badge-hold'};
+  return `<span class="badge ${m[s]||'badge-procure'}">${s}</span>`;
+}
+function badgeReno(s) {
+  const m = {'Not Started':'badge-start','In Progress':'badge-progress','Completed':'badge-done','On Hold':'badge-hold'};
+  return `<span class="badge ${m[s]||'badge-start'}">${s}</span>`;
+}
+
+// ══ ACTION PLAN ══════════════════════════════════════════════════════════════
+function renderPlan() {
+  const total = S.tasks.length;
+  const done  = S.tasks.filter(t=>t.status==='Done').length;
+  const prog  = S.tasks.filter(t=>t.status==='In Progress').length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+
+  document.getElementById('plan-stats').innerHTML = `
+    <div class="stat"><div class="val">${total}</div><div class="lbl">Total Tasks</div></div>
+    <div class="stat"><div class="val" style="color:var(--green)">${done}</div><div class="lbl">Completed</div></div>
+    <div class="stat"><div class="val" style="color:var(--amber)">${prog}</div><div class="lbl">In Progress</div></div>
+    <div class="stat"><div class="val">${pct}%</div><div class="lbl">Overall Progress</div>
+      <div class="progress"><div class="progress-fill ${pct===100?'green':''}" style="width:${pct}%"></div></div>
+    </div>`;
+
+  const html = PHASES.map(ph => {
+    const ptasks = S.tasks.filter(t=>t.phase===ph.id);
+    const pdone  = ptasks.filter(t=>t.status==='Done').length;
+    const ppct   = ptasks.length ? Math.round(pdone/ptasks.length*100) : 0;
+    const rows   = ptasks.map(t => taskRowHtml(t)).join('');
+    return `
+      <div class="card" style="margin-bottom:10px">
+        <div class="phase-hdr" onclick="togglePhase(this)">
+          <span>${ph.label}</span>
+          <span style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:11px;opacity:.8">${pdone}/${ptasks.length} done</span>
+            <span class="chevron">▾</span>
+          </span>
+        </div>
+        <div class="progress" style="height:3px;border-radius:0;background:rgba(255,255,255,.2)">
+          <div class="progress-fill ${ppct===100?'green':''}" style="width:${ppct}%;background:${ppct===100?'#22C55E':'#60A5FA'}"></div>
+        </div>
+        <div class="phase-body">
+          ${rows}
+          <div class="add-task-btn" onclick="openAddTaskModal('${ph.id}')">＋ Add task to this phase</div>
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('plan-phases').innerHTML = html;
+}
+
+function taskRowHtml(t) {
+  const isDone = t.status === 'Done';
+  const hasNotes = t.notes && t.notes.trim();
+  const statusOpts = STATUS_TASK.map(s=>`<option ${s===t.status?'selected':''}>${s}</option>`).join('');
+  return `
+    <div class="task-row ${isDone?'done':''}" data-id="${t.id}">
+      <span class="task-num">${t.num}</span>
+      <div class="task-main">
+        <div class="task-name">${esc(t.name)}</div>
+        <div class="task-detail">${esc(t.detail)}</div>
+        ${hasNotes?`<div class="task-notes visible">📝 ${esc(t.notes)}</div>`:''}
+      </div>
+      <span class="task-cost">${esc(t.est_cost)}</span>
+      <div class="task-date"><input type="date" value="${t.due_date||''}" title="Due date"
+        onchange="updateTask('${t.id}',{due_date:this.value})"></div>
+      <select class="status-sel" onchange="updateTask('${t.id}',{status:this.value})">
+        ${statusOpts}
+      </select>
+      <button class="icon-btn" onclick="openEditTaskModal('${t.id}')" title="Edit / add notes">✏</button>
+    </div>`;
+}
+
+function togglePhase(hdr) {
+  const body = hdr.nextElementSibling.nextElementSibling;
+  hdr.classList.toggle('collapsed');
+  body.classList.toggle('collapsed');
+  if (!body.classList.contains('collapsed')) body.style.maxHeight = body.scrollHeight + 'px';
+  else body.style.maxHeight = '0';
+}
+
+async function updateTask(id, fields) {
+  const r = await A.put('/api/tasks/'+id, fields);
+  if (r.task) {
+    const idx = S.tasks.findIndex(t=>t.id===id);
+    if (idx>=0) S.tasks[idx] = r.task;
+    // re-render only stats to avoid losing focus
+    const total = S.tasks.length, done = S.tasks.filter(t=>t.status==='Done').length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    document.querySelectorAll('#plan-stats .stat')[1].querySelector('.val').textContent = done;
+    document.querySelectorAll('#plan-stats .stat')[3].querySelector('.val').textContent = pct+'%';
+    document.querySelectorAll('#plan-stats .stat')[3].querySelector('.progress-fill').style.width = pct+'%';
+    // Update row style
+    const row = document.querySelector(`.task-row[data-id="${id}"]`);
+    if (row) { row.classList.toggle('done', fields.status==='Done'); }
+    toast('Updated','success');
+  }
+}
+
+function openAddTaskModal(phaseId) {
+  const ph = PHASES.find(p=>p.id===phaseId);
+  modalCtx = { type:'task-add', phaseId };
+  document.getElementById('modal-title').textContent = 'Add Task — '+ph.label;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="fg"><label>Task Name *</label><input type="text" id="m-task-name" placeholder="Short description"></div>
+    <div class="fg"><label>Detail</label><textarea id="m-task-detail" rows="3" placeholder="Full description / what to do"></textarea></div>
+    <div class="grid2">
+      <div class="fg"><label>Estimated Cost</label><input type="text" id="m-task-cost" placeholder="e.g. RM 5,000 or —"></div>
+      <div class="fg"><label>Owner / Contact</label><input type="text" id="m-task-owner" placeholder="e.g. Marcus"></div>
+    </div>`;
+  openModal();
+}
+
+function openEditTaskModal(id) {
+  const t = S.tasks.find(x=>x.id===id);
+  if (!t) return;
+  modalCtx = { type:'task-edit', id };
+  document.getElementById('modal-title').textContent = 'Edit Task — '+t.num+' '+t.name;
+  const statusOpts = STATUS_TASK.map(s=>`<option ${s===t.status?'selected':''}>${s}</option>`).join('');
+  document.getElementById('modal-body').innerHTML = `
+    <div class="fg"><label>Task Name</label><input type="text" id="m-task-name" value="${esc(t.name)}"></div>
+    <div class="fg"><label>Detail</label><textarea id="m-task-detail" rows="3">${esc(t.detail)}</textarea></div>
+    <div class="grid2">
+      <div class="fg"><label>Estimated Cost</label><input type="text" id="m-task-cost" value="${esc(t.est_cost)}"></div>
+      <div class="fg"><label>Owner</label><input type="text" id="m-task-owner" value="${esc(t.owner)}"></div>
+    </div>
+    <div class="grid2">
+      <div class="fg"><label>Status</label><select id="m-task-status">${statusOpts}</select></div>
+      <div class="fg"><label>Due Date</label><input type="date" id="m-task-due" value="${t.due_date||''}"></div>
+    </div>
+    <div class="fg"><label>Notes / Progress Update</label>
+      <textarea id="m-task-notes" rows="3" placeholder="Add any notes, quotes received, or progress updates…">${esc(t.notes)}</textarea></div>
+    <div style="text-align:right;margin-top:4px">
+      <button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Delete Task</button>
+    </div>`;
+  openModal();
+}
+
+async function saveTask() {
+  if (modalCtx.type === 'task-add') {
+    const name = document.getElementById('m-task-name').value.trim();
+    if (!name) return toast('Task name is required','error');
+    const r = await A.post('/api/tasks', {
+      phase: modalCtx.phaseId,
+      name,
+      detail: document.getElementById('m-task-detail').value,
+      est_cost: document.getElementById('m-task-cost').value || '—',
+      owner: document.getElementById('m-task-owner').value,
+    });
+    if (r.task) { S.tasks.push(r.task); renderPlan(); toast('Task added','success'); }
+  } else {
+    const fields = {
+      name:     document.getElementById('m-task-name').value.trim(),
+      detail:   document.getElementById('m-task-detail').value,
+      est_cost: document.getElementById('m-task-cost').value,
+      owner:    document.getElementById('m-task-owner').value,
+      status:   document.getElementById('m-task-status').value,
+      due_date: document.getElementById('m-task-due').value,
+      notes:    document.getElementById('m-task-notes').value,
+    };
+    const r = await A.put('/api/tasks/'+modalCtx.id, fields);
+    if (r.task) {
+      const idx = S.tasks.findIndex(t=>t.id===modalCtx.id);
+      if (idx>=0) S.tasks[idx] = r.task;
+      renderPlan(); toast('Task saved','success');
+    }
+  }
+  closeModal();
+}
+
+async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  await A.del('/api/tasks/'+id);
+  S.tasks = S.tasks.filter(t=>t.id!==id);
+  renderPlan(); closeModal(); toast('Task deleted','success');
+}
+
+// ══ INVENTORY ════════════════════════════════════════════════════════════════
+function renderInventory() {
+  const catF = document.getElementById('inv-cat-filter').value;
+  const stF  = document.getElementById('inv-status-filter').value;
+  let items = S.inventory;
+  if (catF) items = items.filter(i=>i.category===catF);
+  if (stF)  items = items.filter(i=>i.status===stF);
+
+  const totalEst = S.inventory.reduce((s,i)=>s+(i.qty*i.unit_price),0);
+  const ordered  = S.inventory.filter(i=>i.status!=='To Procure'&&i.status!=='On Hold').reduce((s,i)=>s+(i.qty*i.unit_price),0);
+  const budget   = Number(S.settings.inv_budget||100000);
+
+  document.getElementById('inv-stats').innerHTML = `
+    <div class="stat"><div class="val">${S.inventory.length}</div><div class="lbl">Total Items</div></div>
+    <div class="stat"><div class="val">RM ${fmtRM(totalEst)}</div><div class="lbl">Total Est. Cost</div></div>
+    <div class="stat"><div class="val" style="color:var(--amber)">RM ${fmtRM(ordered)}</div><div class="lbl">Ordered / Delivered</div></div>
+    <div class="stat"><div class="val" style="color:${totalEst>budget?'var(--red)':'var(--green)'}">RM ${fmtRM(budget)}</div>
+      <div class="lbl">Budget</div>
+      <div class="progress"><div class="progress-fill ${totalEst>budget?'':'green'}" style="width:${Math.min(totalEst/budget*100,100)}%;${totalEst>budget?'background:var(--red)':''}"></div></div>
+    </div>`;
+
+  if (!items.length) {
+    document.getElementById('inv-tbody').innerHTML = `<tr><td colspan="9"><div class="empty"><div class="icon">📦</div><p>No items yet — add your first procurement item</p></div></td></tr>`;
+    document.getElementById('inv-footer').innerHTML = '';
+    return;
+  }
+
+  const rows = items.map(i => `
+    <tr data-id="${i.id}">
+      <td><span style="font-size:11px;color:var(--g500)">${esc(i.category)}</span></td>
+      <td><strong>${esc(i.name)}</strong>${i.notes?`<br><span style="font-size:11px;color:var(--g400)">${esc(i.notes)}</span>`:''}
+      </td>
+      <td class="num-cell">${i.qty}</td>
+      <td>${esc(i.unit)}</td>
+      <td class="num-cell">${fmtRM(i.unit_price)}</td>
+      <td class="num-cell"><strong>${fmtRM(i.qty*i.unit_price)}</strong></td>
+      <td>${esc(i.supplier)||'<span style="color:var(--g400)">—</span>'}</td>
+      <td>${badgeInv(i.status)}</td>
+      <td><div class="action-group">
+        <button class="icon-btn" onclick="openInvModal('${i.id}')" title="Edit">✏</button>
+        <button class="icon-btn" onclick="deleteInv('${i.id}')" title="Delete">🗑</button>
+      </div></td>
+    </tr>`).join('');
+
+  document.getElementById('inv-tbody').innerHTML = rows;
+  const shown = items.reduce((s,i)=>s+(i.qty*i.unit_price),0);
+  document.getElementById('inv-footer').innerHTML =
+    `<span>Showing ${items.length} items</span>
+     <strong style="margin-left:auto">Subtotal: RM ${fmtRM(shown)}</strong>
+     <strong style="margin-left:16px;color:var(--navy)">Total (all): RM ${fmtRM(totalEst)}</strong>`;
+}
+
+function openInvModal(id) {
+  const i = id ? S.inventory.find(x=>x.id===id) : null;
+  modalCtx = { type: id ? 'inv-edit' : 'inv-add', id };
+  document.getElementById('modal-title').textContent = id ? 'Edit Item' : 'Add Inventory Item';
+  const catOpts = INV_CATEGORIES.map(c=>`<option ${(i&&i.category===c)?'selected':''}>${c}</option>`).join('');
+  const stOpts  = STATUS_INV.map(s=>`<option ${(i&&i.status===s)?'selected':''}>${s}</option>`).join('');
+  document.getElementById('modal-body').innerHTML = `
+    <div class="grid2">
+      <div class="fg"><label>Category *</label><select id="m-cat">${catOpts}</select></div>
+      <div class="fg"><label>Status</label><select id="m-inv-status">${stOpts}</select></div>
+    </div>
+    <div class="fg"><label>Item Name *</label>
+      <input type="text" id="m-inv-name" value="${i?esc(i.name):''}" placeholder="e.g. Hansgrohe basin tap"></div>
+    <div class="grid3">
+      <div class="fg"><label>Qty</label><input type="number" id="m-qty" value="${i?i.qty:1}" min="0" step="any"></div>
+      <div class="fg"><label>Unit</label><input type="text" id="m-unit" value="${i?esc(i.unit):'unit'}" placeholder="unit/m/set"></div>
+      <div class="fg"><label>Unit Price (RM)</label><input type="number" id="m-price" value="${i?i.unit_price:0}" min="0" step="any"></div>
+    </div>
+    <div class="fg"><label>Supplier</label>
+      <input type="text" id="m-supplier" value="${i?esc(i.supplier):''}" placeholder="Supplier / store name"></div>
+    <div class="fg"><label>Notes</label>
+      <textarea id="m-inv-notes" rows="2">${i?esc(i.notes):''}</textarea></div>
+    ${id?`<div style="text-align:right"><button class="btn btn-danger btn-sm" onclick="deleteInv('${id}')">Delete Item</button></div>`:''}`;
+  openModal();
+}
+
+async function saveInv() {
+  const name = document.getElementById('m-inv-name').value.trim();
+  if (!name) return toast('Item name is required','error');
+  const payload = {
+    category:   document.getElementById('m-cat').value,
+    name,
+    qty:        parseFloat(document.getElementById('m-qty').value)||1,
+    unit:       document.getElementById('m-unit').value,
+    unit_price: parseFloat(document.getElementById('m-price').value)||0,
+    supplier:   document.getElementById('m-supplier').value,
+    status:     document.getElementById('m-inv-status').value,
+    notes:      document.getElementById('m-inv-notes').value,
+  };
+  if (modalCtx.id) {
+    const r = await A.put('/api/inventory/'+modalCtx.id, payload);
+    if (r.item) { const idx=S.inventory.findIndex(i=>i.id===modalCtx.id); if(idx>=0)S.inventory[idx]=r.item; }
+  } else {
+    const r = await A.post('/api/inventory', payload);
+    if (r.item) S.inventory.push(r.item);
+  }
+  renderInventory(); closeModal(); toast('Item saved','success');
+}
+
+async function deleteInv(id) {
+  if (!confirm('Delete this item?')) return;
+  await A.del('/api/inventory/'+id);
+  S.inventory = S.inventory.filter(i=>i.id!==id);
+  renderInventory(); closeModal(); toast('Deleted','success');
+}
+
+// ══ RENOVATION ════════════════════════════════════════════════════════════════
+function renderReno() {
+  const areaF = document.getElementById('reno-area-filter').value;
+  const stF   = document.getElementById('reno-status-filter').value;
+  let works = S.reno;
+  if (areaF) works = works.filter(w=>w.area===areaF);
+  if (stF)   works = works.filter(w=>w.status===stF);
+
+  const totalEst  = S.reno.reduce((s,w)=>s+Number(w.est_cost||0),0);
+  const totalAct  = S.reno.reduce((s,w)=>s+Number(w.actual_cost||0),0);
+  const completed = S.reno.filter(w=>w.status==='Completed').length;
+  const budget    = Number(S.settings.reno_budget||150000);
+
+  document.getElementById('reno-stats').innerHTML = `
+    <div class="stat"><div class="val">${S.reno.length}</div><div class="lbl">Work Items</div></div>
+    <div class="stat"><div class="val" style="color:var(--green)">${completed}</div><div class="lbl">Completed</div></div>
+    <div class="stat"><div class="val">RM ${fmtRM(totalEst)}</div><div class="lbl">Total Estimated</div></div>
+    <div class="stat"><div class="val" style="color:${totalAct>totalEst?'var(--red)':'var(--amber)'}">RM ${fmtRM(totalAct)}</div><div class="lbl">Actual Spend</div>
+      <div class="progress"><div class="progress-fill" style="width:${totalEst?Math.min(totalAct/totalEst*100,100):0}%;${totalAct>totalEst?'background:var(--red)':''}"></div></div>
+    </div>`;
+
+  if (!works.length) {
+    document.getElementById('reno-tbody').innerHTML = `<tr><td colspan="8"><div class="empty"><div class="icon">🔨</div><p>No renovation works yet — add your first work item</p></div></td></tr>`;
+    document.getElementById('reno-footer').innerHTML = '';
+    return;
+  }
+
+  const rows = works.map(w => `
+    <tr data-id="${w.id}">
+      <td><span class="area-tag">${esc(w.area)}</span></td>
+      <td><strong>${esc(w.description)}</strong>${w.notes?`<br><span style="font-size:11px;color:var(--g400)">${esc(w.notes)}</span>`:''}
+      </td>
+      <td>${esc(w.tradesman)||'<span style="color:var(--g400)">—</span>'}</td>
+      <td>${badgeReno(w.status)}</td>
+      <td class="num-cell">${w.est_cost?fmtRM(w.est_cost):'—'}</td>
+      <td class="num-cell">${w.actual_cost?`<strong>${fmtRM(w.actual_cost)}</strong>`:'—'}</td>
+      <td style="font-size:11px;white-space:nowrap">
+        ${w.start_date?fmtDate(w.start_date):'—'}${w.end_date?' → '+fmtDate(w.end_date):''}
+      </td>
+      <td><div class="action-group">
+        <button class="icon-btn" onclick="openRenoModal('${w.id}')" title="Edit">✏</button>
+        <button class="icon-btn" onclick="deleteReno('${w.id}')" title="Delete">🗑</button>
+      </div></td>
+    </tr>`).join('');
+
+  document.getElementById('reno-tbody').innerHTML = rows;
+  const shownEst = works.reduce((s,w)=>s+Number(w.est_cost||0),0);
+  const shownAct = works.reduce((s,w)=>s+Number(w.actual_cost||0),0);
+  document.getElementById('reno-footer').innerHTML =
+    `<span>Showing ${works.length} items</span>
+     <strong style="margin-left:auto">Est. Subtotal: RM ${fmtRM(shownEst)}</strong>
+     <strong style="margin-left:16px">Actual Subtotal: RM ${fmtRM(shownAct)}</strong>
+     <strong style="margin-left:16px;color:var(--navy)">Total Est.: RM ${fmtRM(totalEst)} | Budget: RM ${fmtRM(budget)}</strong>`;
+}
+
+function openRenoModal(id) {
+  const w = id ? S.reno.find(x=>x.id===id) : null;
+  modalCtx = { type: id ? 'reno-edit' : 'reno-add', id };
+  document.getElementById('modal-title').textContent = id ? 'Edit Work Item' : 'Add Renovation Work';
+  const areaOpts = RENO_AREAS.map(a=>`<option ${(w&&w.area===a)?'selected':''}>${a}</option>`).join('');
+  const stOpts   = STATUS_RENO.map(s=>`<option ${(w&&w.status===s)?'selected':''}>${s}</option>`).join('');
+  document.getElementById('modal-body').innerHTML = `
+    <div class="grid2">
+      <div class="fg"><label>Area *</label><select id="m-area">${areaOpts}</select></div>
+      <div class="fg"><label>Status</label><select id="m-reno-status">${stOpts}</select></div>
+    </div>
+    <div class="fg"><label>Description *</label>
+      <input type="text" id="m-reno-desc" value="${w?esc(w.description):''}" placeholder="e.g. Waterproofing — all bathrooms"></div>
+    <div class="fg"><label>Tradesman / Assigned To</label>
+      <input type="text" id="m-tradesman" value="${w?esc(w.tradesman):''}" placeholder="e.g. Ahmad / Main Contractor"></div>
+    <div class="grid2">
+      <div class="fg"><label>Estimated Cost (RM)</label>
+        <input type="number" id="m-est" value="${w?w.est_cost:''}" min="0" step="any" placeholder="0"></div>
+      <div class="fg"><label>Actual Cost (RM)</label>
+        <input type="number" id="m-actual" value="${w?w.actual_cost:''}" min="0" step="any" placeholder="0"></div>
+    </div>
+    <div class="grid2">
+      <div class="fg"><label>Start Date</label><input type="date" id="m-start" value="${w?w.start_date:''}"></div>
+      <div class="fg"><label>End Date</label><input type="date" id="m-end" value="${w?w.end_date:''}"></div>
+    </div>
+    <div class="fg"><label>Notes</label>
+      <textarea id="m-reno-notes" rows="3" placeholder="Scope details, material specs, issues…">${w?esc(w.notes):''}</textarea></div>
+    ${id?`<div style="text-align:right"><button class="btn btn-danger btn-sm" onclick="deleteReno('${id}')">Delete Work Item</button></div>`:''}`;
+  openModal();
+}
+
+async function saveReno() {
+  const desc = document.getElementById('m-reno-desc').value.trim();
+  if (!desc) return toast('Description is required','error');
+  const payload = {
+    area:        document.getElementById('m-area').value,
+    description: desc,
+    tradesman:   document.getElementById('m-tradesman').value,
+    status:      document.getElementById('m-reno-status').value,
+    est_cost:    parseFloat(document.getElementById('m-est').value)||0,
+    actual_cost: parseFloat(document.getElementById('m-actual').value)||0,
+    start_date:  document.getElementById('m-start').value,
+    end_date:    document.getElementById('m-end').value,
+    notes:       document.getElementById('m-reno-notes').value,
+  };
+  if (modalCtx.id) {
+    const r = await A.put('/api/reno/'+modalCtx.id, payload);
+    if (r.work) { const idx=S.reno.findIndex(w=>w.id===modalCtx.id); if(idx>=0)S.reno[idx]=r.work; }
+  } else {
+    const r = await A.post('/api/reno', payload);
+    if (r.work) S.reno.push(r.work);
+  }
+  renderReno(); closeModal(); toast('Work item saved','success');
+}
+
+async function deleteReno(id) {
+  if (!confirm('Delete this work item?')) return;
+  await A.del('/api/reno/'+id);
+  S.reno = S.reno.filter(w=>w.id!==id);
+  renderReno(); closeModal(); toast('Deleted','success');
+}
+
+// ══ SCRATCHPAD ════════════════════════════════════════════════════════════════
+function renderScratch() {
+  const entries = S.scratchpad;
+  if (!entries.length) {
+    document.getElementById('scratch-entries').innerHTML = `<div class="empty"><div class="icon">📝</div><p>No notes yet — be the first to add one</p></div>`;
+    return;
+  }
+  const html = entries.map(e => {
+    const contractor = S.settings.contractor_name || 'Contractor';
+    const isCon = e.author.toLowerCase() !== 'marcus' && e.author !== currentUser;
+    const isMe  = e.author === currentUser;
+    return `
+      <div class="scratch-entry ${isCon?'contractor':''}">
+        <div class="scratch-meta">
+          <span class="scratch-author">${esc(e.author)}</span>
+          <span class="scratch-time">${e.timestamp||''}</span>
+          ${isMe?`<button class="icon-btn" style="margin-left:auto;font-size:12px" onclick="deleteScratch('${e.id}')">🗑</button>`:''}
+        </div>
+        <div class="scratch-text">${esc(e.text)}</div>
+      </div>`;
+  }).join('');
+  document.getElementById('scratch-entries').innerHTML = html;
+}
+
+async function postScratch() {
+  const text = document.getElementById('scratch-text').value.trim();
+  if (!text) return toast('Write something first','error');
+  const r = await A.post('/api/scratchpad', { author: currentUser, text });
+  if (r.entry) {
+    S.scratchpad.unshift(r.entry);
+    renderScratch();
+    document.getElementById('scratch-text').value = '';
+    toast('Note posted','success');
+  }
+}
+
+async function deleteScratch(id) {
+  if (!confirm('Delete this note?')) return;
+  await A.del('/api/scratchpad/'+id);
+  S.scratchpad = S.scratchpad.filter(e=>e.id!==id);
+  renderScratch(); toast('Note deleted','success');
+}
+
+// ══ Settings ══════════════════════════════════════════════════════════════════
+function openSettings() {
+  document.getElementById('set-contractor').value = S.settings.contractor_name||'';
+  document.getElementById('set-reno-budget').value = S.settings.reno_budget||'';
+  document.getElementById('set-inv-budget').value = S.settings.inv_budget||'';
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+async function saveSettings() {
+  const r = await A.put('/api/settings', {
+    contractor_name: document.getElementById('set-contractor').value,
+    reno_budget:     document.getElementById('set-reno-budget').value||'150000',
+    inv_budget:      document.getElementById('set-inv-budget').value||'100000',
+  });
+  S.settings = r.settings;
+  renderInventory(); renderReno();
+  closeSettings(); toast('Settings saved','success');
+}
+
+// ══ Modal ══════════════════════════════════════════════════════════════════════
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); modalCtx=null; }
+async function modalSave() {
+  if (!modalCtx) return;
+  if (modalCtx.type.startsWith('task'))    await saveTask();
+  else if (modalCtx.type.startsWith('inv')) await saveInv();
+  else if (modalCtx.type.startsWith('reno')) await saveReno();
+}
+
+// ══ Toast ════════════════════════════════════════════════════════════════════
+let _toastTimer;
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>el.className='', 2500);
+}
+
+// ══ Utils ════════════════════════════════════════════════════════════════════
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ══ Init ═════════════════════════════════════════════════════════════════════
+(async function init() {
+  const pin  = sessionStorage.getItem('kh_pin');
+  const user = sessionStorage.getItem('kh_user');
+  if (pin && user) {
+    storedPin   = pin;
+    currentUser = user;
+    await launchApp();
+  }
+  // else login screen is shown by default
+})();
+</script>
+</body>
+</html>

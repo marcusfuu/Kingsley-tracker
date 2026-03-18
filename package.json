@@ -1,0 +1,13 @@
+{
+  "name": "kingsley-app",
+  "version": "1.0.0",
+  "description": "Kingsley Hills SL-05b Property Manager",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "better-sqlite3": "^9.4.3"
+  }
+}

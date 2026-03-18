@@ -165,5 +165,40 @@ app.delete('/api/scratchpad/:id', auth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Activity Log ─────────────────────────────────────────────────────────────
+
+app.get('/api/activity-counts', auth, (req, res) => {
+  const rows = db.prepare(
+    'SELECT entity_type, entity_id, COUNT(*) as count FROM activity_log GROUP BY entity_type, entity_id'
+  ).all();
+  const counts = {};
+  rows.forEach(r => { counts[r.entity_type + ':' + r.entity_id] = r.count; });
+  res.json({ counts });
+});
+
+app.get('/api/activity/:type/:id', auth, (req, res) => {
+  const entries = db.prepare(
+    'SELECT * FROM activity_log WHERE entity_type=? AND entity_id=? ORDER BY timestamp ASC'
+  ).all(req.params.type, req.params.id);
+  res.json({ entries });
+});
+
+app.post('/api/activity', auth, (req, res) => {
+  const { entity_type, entity_id, author, text } = req.body;
+  if (!entity_type || !entity_id || !author || !text)
+    return res.status(400).json({ error: 'Missing fields' });
+  const id = uid();
+  db.prepare(
+    `INSERT INTO activity_log (id,entity_type,entity_id,author,text,timestamp)
+     VALUES (?,?,?,?,?,datetime('now','localtime'))`
+  ).run(id, entity_type, entity_id, author, text);
+  res.json({ entry: db.prepare('SELECT * FROM activity_log WHERE id=?').get(id) });
+});
+
+app.delete('/api/activity/:id', auth, (req, res) => {
+  db.prepare('DELETE FROM activity_log WHERE id=?').run(req.params.id);
+  res.json({ ok: true });
+});
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => console.log(`Kingsley App running on port ${PORT}`));

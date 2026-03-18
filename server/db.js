@@ -61,6 +61,17 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT DEFAULT ''
   );
+
+  CREATE TABLE IF NOT EXISTS activity_log (
+    id TEXT PRIMARY KEY,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    author TEXT NOT NULL,
+    text TEXT NOT NULL,
+    timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_activity ON activity_log(entity_type, entity_id);
 `);
 
 // Seed default settings

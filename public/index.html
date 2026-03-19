@@ -259,7 +259,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 .settings-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
 
 /* ── Scratchpad ── */
-.scratch-feed { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.scratch-feed { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; max-height: 60vh; overflow-y: auto; }
 .scratch-entry {
   background: var(--card); border: 1px solid var(--border);
   border-radius: 8px; padding: 14px 16px;
@@ -287,6 +287,50 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 .compose-box button {
   margin-top: 10px; padding: 9px 20px; background: var(--accent);
   color: #0f172a; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;
+}
+
+/* ── Page split: table + notes panel ── */
+.page-split { display: flex; gap: 20px; align-items: flex-start; }
+.page-main { flex: 1; min-width: 0; }
+.notes-panel {
+  width: 290px; flex-shrink: 0;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px;
+  position: sticky; top: 24px;
+  max-height: calc(100vh - 160px);
+  display: flex; flex-direction: column;
+}
+.notes-panel-header {
+  font-size: 0.75rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  margin-bottom: 10px; flex-shrink: 0;
+}
+.notes-panel-feed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.panel-entry {
+  background: var(--bg); border-radius: 8px; padding: 9px 11px;
+  border-left: 3px solid var(--border);
+}
+.panel-entry.marcus { border-left-color: var(--marcus); }
+.panel-entry.lucas  { border-left-color: var(--lucas); }
+.panel-entry.system { border-left-color: var(--muted); opacity: 0.75; }
+.panel-entity {
+  font-size: 0.72rem; color: var(--accent); font-weight: 600;
+  margin-bottom: 4px; cursor: pointer; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.panel-entity:hover { text-decoration: underline; }
+.panel-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.panel-author { font-size: 0.73rem; font-weight: 700; }
+.panel-author.marcus { color: var(--marcus); }
+.panel-author.lucas  { color: var(--lucas); }
+.panel-author.system { color: var(--muted); }
+.panel-time { font-size: 0.7rem; color: var(--muted); }
+.panel-text { font-size: 0.8rem; line-height: 1.4; }
+.panel-empty { color: var(--muted); font-size: 0.82rem; padding: 4px 0; }
+@media (max-width: 900px) {
+  .page-split { flex-direction: column; }
+  .notes-panel { width: 100%; position: static; max-height: 260px; }
 }
 
 /* ── Reno & Inventory sections ── */
@@ -360,64 +404,88 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 
   <!-- Action Plan -->
   <div class="page" id="page-tasks">
-    <div class="section-header">
-      <h2>Action Plan</h2>
-      <button class="btn-add" onclick="openTaskModal()">+ Add Task</button>
-    </div>
-    <div class="table-wrap">
-      <table id="tasksTable">
-        <thead>
-          <tr>
-            <th>#</th><th>Task</th><th>Est. Cost</th><th>Owner</th>
-            <th>Status</th><th>Due</th><th>Notes</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="tasksTbody"></tbody>
-      </table>
+    <div class="page-split">
+      <div class="page-main">
+        <div class="section-header">
+          <h2>Action Plan</h2>
+          <button class="btn-add" onclick="openTaskModal()">+ Add Task</button>
+        </div>
+        <div class="table-wrap">
+          <table id="tasksTable">
+            <thead>
+              <tr>
+                <th>#</th><th>Task</th><th>Est. Cost</th><th>Owner</th>
+                <th>Status</th><th>Due</th><th>Notes</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="tasksTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="notes-panel">
+        <div class="notes-panel-header">Notes &amp; Activity</div>
+        <div class="notes-panel-feed" id="actFeed-task"></div>
+      </div>
     </div>
   </div>
 
   <!-- Inventory -->
   <div class="page" id="page-inventory">
-    <div class="section-header">
-      <h2>Inventory &amp; Costing</h2>
-      <button class="btn-add" onclick="openInvModal()">+ Add Item</button>
-    </div>
-    <div id="invBudgetBar" style="margin-bottom:16px;"></div>
-    <div class="table-wrap">
-      <table id="invTable">
-        <thead>
-          <tr>
-            <th>Category</th><th>Item</th><th>Qty</th><th>Unit</th>
-            <th>Unit Price</th><th>Total</th><th>Supplier</th>
-            <th>Status</th><th>Notes</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="invTbody"></tbody>
-        <tfoot><tr class="totals-row" id="invTotals"></tr></tfoot>
-      </table>
+    <div class="page-split">
+      <div class="page-main">
+        <div class="section-header">
+          <h2>Inventory &amp; Costing</h2>
+          <button class="btn-add" onclick="openInvModal()">+ Add Item</button>
+        </div>
+        <div id="invBudgetBar" style="margin-bottom:16px;"></div>
+        <div class="table-wrap">
+          <table id="invTable">
+            <thead>
+              <tr>
+                <th>Category</th><th>Item</th><th>Qty</th><th>Unit</th>
+                <th>Unit Price</th><th>Total</th><th>Supplier</th>
+                <th>Status</th><th>Notes</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="invTbody"></tbody>
+            <tfoot><tr class="totals-row" id="invTotals"></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="notes-panel">
+        <div class="notes-panel-header">Notes &amp; Activity</div>
+        <div class="notes-panel-feed" id="actFeed-inventory"></div>
+      </div>
     </div>
   </div>
 
   <!-- Renovation -->
   <div class="page" id="page-reno">
-    <div class="section-header">
-      <h2>Renovation Works</h2>
-      <button class="btn-add" onclick="openRenoModal()">+ Add Work Item</button>
-    </div>
-    <div id="renoBudgetBar" style="margin-bottom:16px;"></div>
-    <div class="table-wrap">
-      <table id="renoTable">
-        <thead>
-          <tr>
-            <th>Area</th><th>Description</th><th>Tradesman</th>
-            <th>Status</th><th>Est. Cost</th><th>Actual</th>
-            <th>Start</th><th>End</th><th>Notes</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="renoTbody"></tbody>
-        <tfoot><tr class="totals-row" id="renoTotals"></tr></tfoot>
-      </table>
+    <div class="page-split">
+      <div class="page-main">
+        <div class="section-header">
+          <h2>Renovation Works</h2>
+          <button class="btn-add" onclick="openRenoModal()">+ Add Work Item</button>
+        </div>
+        <div id="renoBudgetBar" style="margin-bottom:16px;"></div>
+        <div class="table-wrap">
+          <table id="renoTable">
+            <thead>
+              <tr>
+                <th>Area</th><th>Description</th><th>Tradesman</th>
+                <th>Status</th><th>Est. Cost</th><th>Actual</th>
+                <th>Start</th><th>End</th><th>Notes</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="renoTbody"></tbody>
+            <tfoot><tr class="totals-row" id="renoTotals"></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="notes-panel">
+        <div class="notes-panel-header">Notes &amp; Activity</div>
+        <div class="notes-panel-feed" id="actFeed-reno"></div>
+      </div>
     </div>
   </div>
 
@@ -426,8 +494,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <div class="section-header"><h2>Scratchpad</h2></div>
     <div class="scratch-feed" id="scratchFeed"></div>
     <div class="compose-box">
-      <textarea id="scratchInput" placeholder="Write a note…"></textarea>
+      <textarea id="scratchInput" placeholder="Write a note… (Ctrl+Enter to post)" onkeydown="if(event.ctrlKey&&event.key==='Enter')postScratch()"></textarea>
       <button onclick="postScratch()">Post Note</button>
+      <div id="scratchError" style="display:none;color:var(--red);font-size:0.82rem;margin-top:8px"></div>
     </div>
   </div>
 
@@ -568,7 +637,8 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 const S = {
   pin: '', user: '',
   tasks: [], inventory: [], reno: [], scratch: [],
-  settings: {}, actCounts: {}
+  settings: {}, actCounts: {},
+  actFeeds: { task: [], inventory: [], reno: [] }
 };
 
 let currentTaskId = null;
@@ -651,13 +721,16 @@ async function api(method, url, body) {
 // LOAD ALL
 // ═══════════════════════════════════════════════════════════════
 async function loadAll() {
-  const [tr, ir, rr, sr, setr, acr] = await Promise.all([
+  const [tr, ir, rr, sr, setr, acr, aft, afi, afr] = await Promise.all([
     api('GET', '/api/tasks'),
     api('GET', '/api/inventory'),
     api('GET', '/api/reno'),
     api('GET', '/api/scratchpad'),
     api('GET', '/api/settings'),
-    api('GET', '/api/activity-counts')
+    api('GET', '/api/activity-counts'),
+    api('GET', '/api/activity/task'),
+    api('GET', '/api/activity/inventory'),
+    api('GET', '/api/activity/reno')
   ]);
   S.tasks     = tr.tasks;
   S.inventory = ir.items;
@@ -665,6 +738,7 @@ async function loadAll() {
   S.scratch   = sr.entries;
   S.settings  = setr.settings;
   S.actCounts = acr.counts;
+  S.actFeeds  = { task: aft.entries, inventory: afi.entries, reno: afr.entries };
   renderAll();
 }
 
@@ -675,6 +749,9 @@ function renderAll() {
   renderReno();
   renderScratch();
   renderSettings();
+  renderActivityPanel('task');
+  renderActivityPanel('inventory');
+  renderActivityPanel('reno');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1137,6 +1214,47 @@ async function deleteReno() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ACTIVITY PANELS
+// ═══════════════════════════════════════════════════════════════
+function renderActivityPanel(type) {
+  const feed = document.getElementById('actFeed-' + type);
+  if (!feed) return;
+  const entries = S.actFeeds[type] || [];
+  if (!entries.length) {
+    feed.innerHTML = '<div class="panel-empty">No notes yet.</div>';
+    return;
+  }
+  const nameMap = {};
+  if (type === 'task')      S.tasks.forEach(t => nameMap[t.id] = { name: t.name,        open: `openTaskModal('${t.id}')` });
+  if (type === 'inventory') S.inventory.forEach(i => nameMap[i.id] = { name: i.name,    open: `openInvModal('${i.id}')` });
+  if (type === 'reno')      S.reno.forEach(w => nameMap[w.id] = { name: w.description,  open: `openRenoModal('${w.id}')` });
+
+  feed.innerHTML = entries.map(e => {
+    const authorCls = e.author === 'system' ? 'system' : e.author.toLowerCase();
+    const entity    = nameMap[e.entity_id];
+    const label     = entity ? (entity.name.length > 45 ? entity.name.slice(0,45) + '…' : entity.name) : e.entity_id;
+    const clickAttr = entity ? `onclick="${entity.open}"` : '';
+    return `
+      <div class="panel-entry ${authorCls}">
+        <div class="panel-entity" ${clickAttr}>${escHtml(label)}</div>
+        <div class="panel-meta">
+          <span class="panel-author ${authorCls}">${e.author === 'system' ? '⚙ System' : escHtml(e.author)}</span>
+          <span class="panel-time">${e.timestamp}</span>
+        </div>
+        <div class="panel-text">${escHtml(e.text)}</div>
+      </div>`;
+  }).join('');
+}
+
+async function refreshActFeed(type) {
+  try {
+    const r = await api('GET', '/api/activity/' + type);
+    S.actFeeds[type] = r.entries;
+    renderActivityPanel(type);
+  } catch(e) { /* silent */ }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // SCRATCHPAD
 // ═══════════════════════════════════════════════════════════════
 function renderScratch() {
@@ -1158,11 +1276,19 @@ function renderScratch() {
 
 async function postScratch() {
   const text = document.getElementById('scratchInput').value.trim();
+  const errEl = document.getElementById('scratchError');
+  errEl.style.display = 'none';
   if (!text) return;
-  const r = await api('POST', '/api/scratchpad', { author: S.user, text });
-  S.scratch.unshift(r.entry);
-  document.getElementById('scratchInput').value = '';
-  renderScratch();
+  try {
+    const r = await api('POST', '/api/scratchpad', { author: S.user, text });
+    S.scratch.unshift(r.entry);
+    document.getElementById('scratchInput').value = '';
+    renderScratch();
+    document.getElementById('scratchFeed').scrollTop = 0;
+  } catch(e) {
+    errEl.textContent = 'Failed to post note — ' + (e.message || 'please try again.');
+    errEl.style.display = 'block';
+  }
 }
 
 async function deleteScratch(id) {
@@ -1229,6 +1355,7 @@ async function postActivityModal(et, eid) {
   S.actCounts[key] = (S.actCounts[key] || 0) + 1;
   if (inputEl) inputEl.value = '';
   await loadModalActivity(et, eid, feedMap[et]);
+  refreshActFeed(et);
 }
 
 async function deleteActivity(id, et, eid, feedId) {
@@ -1237,6 +1364,7 @@ async function deleteActivity(id, et, eid, feedId) {
   const key = et + ':' + eid;
   if (S.actCounts[key] > 0) S.actCounts[key]--;
   await loadModalActivity(et, eid, feedId);
+  refreshActFeed(et);
 }
 
 async function autoLog(et, eid, text) {
@@ -1244,6 +1372,7 @@ async function autoLog(et, eid, text) {
     await api('POST', '/api/activity', { entity_type: et, entity_id: eid, author: 'system', text: `[${S.user}] ${text}` });
     const key = et + ':' + eid;
     S.actCounts[key] = (S.actCounts[key] || 0) + 1;
+    refreshActFeed(et);
   } catch(e) { /* silent */ }
 }
 

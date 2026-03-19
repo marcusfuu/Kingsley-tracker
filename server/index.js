@@ -176,6 +176,13 @@ app.get('/api/activity-counts', auth, (req, res) => {
   res.json({ counts });
 });
 
+app.get('/api/activity/:type', auth, (req, res) => {
+  const entries = db.prepare(
+    'SELECT * FROM activity_log WHERE entity_type=? ORDER BY timestamp DESC LIMIT 200'
+  ).all(req.params.type);
+  res.json({ entries });
+});
+
 app.get('/api/activity/:type/:id', auth, (req, res) => {
   const entries = db.prepare(
     'SELECT * FROM activity_log WHERE entity_type=? AND entity_id=? ORDER BY timestamp ASC'

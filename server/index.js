@@ -188,7 +188,7 @@ app.post('/api/scratchpad', auth, (req, res) => {
   const { author, text } = req.body;
   if (!author || !text) return res.status(400).json({ error: 'author and text required' });
   const id = uid();
-  db.prepare('INSERT INTO scratchpad (id,author,text,timestamp) VALUES (?,?,?,datetime("now","localtime"))').run(id, author, text);
+  db.prepare("INSERT INTO scratchpad (id,author,text,timestamp) VALUES (?,?,?,datetime('now','localtime'))").run(id, author, text);
   res.json({ entry: db.prepare('SELECT * FROM scratchpad WHERE id=?').get(id) });
 });
 

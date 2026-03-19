@@ -146,6 +146,38 @@ app.delete('/api/reno/:id', auth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Shortlist ────────────────────────────────────────────────────────────────
+app.get('/api/shortlist', auth, (req, res) => {
+  const items = db.prepare('SELECT * FROM shortlist ORDER BY category, created_at').all();
+  res.json({ items });
+});
+
+app.post('/api/shortlist', auth, (req, res) => {
+  const { category, name, brand, link, price, qty, area, priority, status, notes, added_by } = req.body;
+  if (!category || !name) return res.status(400).json({ error: 'category and name required' });
+  const id = uid();
+  db.prepare(
+    `INSERT INTO shortlist (id,category,name,brand,link,price,qty,area,priority,status,notes,added_by)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+  ).run(id, category, name, brand||'', link||'', price||0, qty||1, area||'', priority||'Medium', status||'Considering', notes||'', added_by||'');
+  res.json({ item: db.prepare('SELECT * FROM shortlist WHERE id=?').get(id) });
+});
+
+app.put('/api/shortlist/:id', auth, (req, res) => {
+  const allowed = ['category','name','brand','link','price','qty','area','priority','status','notes','added_by'];
+  const fields = {};
+  allowed.forEach(f => { if (req.body[f] !== undefined) fields[f] = req.body[f]; });
+  if (!Object.keys(fields).length) return res.status(400).json({ error: 'No fields' });
+  const sets = Object.keys(fields).map(k => `${k}=?`).join(',');
+  db.prepare(`UPDATE shortlist SET ${sets} WHERE id=?`).run(...Object.values(fields), req.params.id);
+  res.json({ item: db.prepare('SELECT * FROM shortlist WHERE id=?').get(req.params.id) });
+});
+
+app.delete('/api/shortlist/:id', auth, (req, res) => {
+  db.prepare('DELETE FROM shortlist WHERE id=?').run(req.params.id);
+  res.json({ ok: true });
+});
+
 // ─── Scratchpad ───────────────────────────────────────────────────────────────
 app.get('/api/scratchpad', auth, (req, res) => {
   const entries = db.prepare('SELECT * FROM scratchpad ORDER BY timestamp DESC LIMIT 200').all();

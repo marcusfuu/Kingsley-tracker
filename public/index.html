@@ -289,6 +289,20 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   color: #0f172a; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;
 }
 
+/* ── Shortlist priority badges ── */
+.badge-high { background: rgba(239,68,68,0.18);  color: var(--red); }
+.badge-med  { background: rgba(234,179,8,0.18);  color: var(--yellow); }
+.badge-low  { background: rgba(148,163,184,0.18); color: var(--muted); }
+.badge-cons { background: rgba(148,163,184,0.15); color: var(--muted); }
+.badge-sl   { background: rgba(34,197,94,0.18);  color: var(--green); }
+.badge-rej  { background: rgba(239,68,68,0.12);  color: var(--red); opacity: 0.7; }
+.link-cell a { color: var(--accent); font-size: 0.8rem; text-decoration: none; }
+.link-cell a:hover { text-decoration: underline; }
+.sl-summary-block { margin-bottom: 14px; }
+.sl-summary-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.sl-summary-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 3px 0; }
+.sl-summary-row span:last-child { font-weight: 600; }
+
 /* ── Page split: table + notes panel ── */
 .page-split { display: flex; gap: 20px; align-items: flex-start; }
 .page-main { flex: 1; min-width: 0; }
@@ -392,6 +406,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <button class="nav-btn" onclick="showPage('tasks')">Action Plan</button>
     <button class="nav-btn" onclick="showPage('inventory')">Inventory</button>
     <button class="nav-btn" onclick="showPage('reno')">Renovation</button>
+    <button class="nav-btn" onclick="showPage('shortlist')">Shortlist</button>
     <button class="nav-btn" onclick="showPage('scratchpad')">Scratchpad</button>
     <button class="nav-btn" onclick="showPage('settings')">Settings</button>
   </nav>
@@ -485,6 +500,36 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <div class="notes-panel">
         <div class="notes-panel-header">Notes &amp; Activity</div>
         <div class="notes-panel-feed" id="actFeed-reno"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shortlist -->
+  <div class="page" id="page-shortlist">
+    <div class="page-split">
+      <div class="page-main">
+        <div class="section-header">
+          <h2>Shortlist</h2>
+          <span style="font-size:0.8rem;color:var(--muted);flex:1">Items under consideration — not yet confirmed</span>
+          <button class="btn-add" onclick="openShortlistModal()">+ Add Item</button>
+        </div>
+        <div class="table-wrap">
+          <table id="shortlistTable">
+            <thead>
+              <tr>
+                <th>Category</th><th>Item</th><th>Brand</th>
+                <th>Link</th><th>Unit Price</th><th>Qty</th><th>Total</th>
+                <th>Room / Area</th><th>Priority</th><th>Status</th><th>Notes</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="shortlistTbody"></tbody>
+            <tfoot><tr class="totals-row" id="shortlistTotals"></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="notes-panel">
+        <div class="notes-panel-header">Summary</div>
+        <div id="shortlistSummary"></div>
       </div>
     </div>
   </div>
@@ -630,16 +675,48 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   </div>
 </div>
 
+<!-- Shortlist Modal -->
+<div class="modal-overlay" id="shortlistModal" style="display:none">
+  <div class="modal">
+    <h3 id="slModalTitle">Shortlist Item</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+      <div class="form-row"><label>Category *</label><input type="text" id="sl_cat" placeholder="e.g. Furniture, Lighting"></div>
+      <div class="form-row"><label>Room / Area</label><input type="text" id="sl_area" placeholder="e.g. Master Bedroom, Kitchen"></div>
+      <div class="form-row" style="grid-column:1/-1"><label>Item Name *</label><input type="text" id="sl_name" placeholder="Descriptive name of the item"></div>
+      <div class="form-row"><label>Brand / Supplier</label><input type="text" id="sl_brand" placeholder="e.g. IKEA, Harvey Norman"></div>
+      <div class="form-row"><label>Link / URL</label><input type="url" id="sl_link" placeholder="https://…"></div>
+      <div class="form-row"><label>Unit Price (RM)</label><input type="number" id="sl_price" value="0" min="0" step="0.01"></div>
+      <div class="form-row"><label>Qty Needed</label><input type="number" id="sl_qty" value="1" min="1" step="1"></div>
+      <div class="form-row"><label>Priority</label>
+        <select id="sl_priority">
+          <option>High</option><option selected>Medium</option><option>Low</option>
+        </select></div>
+      <div class="form-row"><label>Status</label>
+        <select id="sl_status">
+          <option>Considering</option><option>Shortlisted</option><option>Rejected</option>
+        </select></div>
+    </div>
+    <div class="form-row"><label>Notes</label><textarea id="sl_notes" placeholder="Dimensions, colour options, alternatives considered…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-del" id="slDelBtn" onclick="deleteShortlistItem()" style="display:none">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('shortlistModal')">Cancel</button>
+      <button class="btn-save" onclick="saveShortlistItem()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
 const S = {
   pin: '', user: '',
-  tasks: [], inventory: [], reno: [], scratch: [],
+  tasks: [], inventory: [], reno: [], scratch: [], shortlist: [],
   settings: {}, actCounts: {},
   actFeeds: { task: [], inventory: [], reno: [] }
 };
+
+let currentShortlistId = null;
 
 let currentTaskId = null;
 let currentInvId  = null;
@@ -721,7 +798,7 @@ async function api(method, url, body) {
 // LOAD ALL
 // ═══════════════════════════════════════════════════════════════
 async function loadAll() {
-  const [tr, ir, rr, sr, setr, acr, aft, afi, afr] = await Promise.all([
+  const [tr, ir, rr, sr, setr, acr, aft, afi, afr, slr] = await Promise.all([
     api('GET', '/api/tasks'),
     api('GET', '/api/inventory'),
     api('GET', '/api/reno'),
@@ -730,12 +807,14 @@ async function loadAll() {
     api('GET', '/api/activity-counts'),
     api('GET', '/api/activity/task'),
     api('GET', '/api/activity/inventory'),
-    api('GET', '/api/activity/reno')
+    api('GET', '/api/activity/reno'),
+    api('GET', '/api/shortlist')
   ]);
   S.tasks     = tr.tasks;
   S.inventory = ir.items;
   S.reno      = rr.works;
   S.scratch   = sr.entries;
+  S.shortlist = slr.items;
   S.settings  = setr.settings;
   S.actCounts = acr.counts;
   S.actFeeds  = { task: aft.entries, inventory: afi.entries, reno: afr.entries };
@@ -747,6 +826,7 @@ function renderAll() {
   renderTasks();
   renderInventory();
   renderReno();
+  renderShortlist();
   renderScratch();
   renderSettings();
   renderActivityPanel('task');
@@ -762,7 +842,7 @@ function showPage(id) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   const btns = document.querySelectorAll('.nav-btn');
-  const labels = ['dashboard','tasks','inventory','reno','scratchpad','settings'];
+  const labels = ['dashboard','tasks','inventory','reno','shortlist','scratchpad','settings'];
   const idx = labels.indexOf(id);
   if (idx >= 0) btns[idx].classList.add('active');
 }
@@ -1211,6 +1291,177 @@ async function deleteReno() {
   S.reno = S.reno.filter(x => x.id !== currentRenoId);
   closeModal('renoModal');
   renderReno(); renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SHORTLIST
+// ═══════════════════════════════════════════════════════════════
+function slPriorityBadge(p) {
+  const map = { High: 'badge-high', Medium: 'badge-med', Low: 'badge-low' };
+  return `<span class="badge ${map[p]||'badge-med'}">${p}</span>`;
+}
+function slStatusBadge(s) {
+  const map = { Considering: 'badge-cons', Shortlisted: 'badge-sl', Rejected: 'badge-rej' };
+  return `<span class="badge ${map[s]||'badge-cons'}">${s}</span>`;
+}
+
+function renderShortlist() {
+  const tbody = document.getElementById('shortlistTbody');
+  if (!tbody) return;
+
+  const cats = [...new Set(S.shortlist.map(i => i.category))].sort();
+  let html = '';
+  cats.forEach(cat => {
+    const items = S.shortlist.filter(i => i.category === cat);
+    html += `<tr class="phase-row"><td colspan="12" style="color:var(--accent)">${escHtml(cat)}</td></tr>`;
+    items.forEach(i => {
+      const total = (Number(i.price)||0) * (Number(i.qty)||1);
+      const linkCell = i.link
+        ? `<div class="link-cell"><a href="${escHtml(i.link)}" target="_blank" rel="noopener">🔗 View</a></div>`
+        : '<span style="color:var(--muted)">—</span>';
+      html += `<tr>
+        <td style="color:var(--muted)">${escHtml(i.category)}</td>
+        <td style="cursor:pointer;font-weight:500" onclick="openShortlistModal('${i.id}')">${escHtml(i.name)}</td>
+        <td style="color:var(--muted)">${escHtml(i.brand)||'—'}</td>
+        <td>${linkCell}</td>
+        <td>${fmtMoney(i.price)}</td>
+        <td>${i.qty}</td>
+        <td style="font-weight:600">${fmtMoney(total)}</td>
+        <td style="color:var(--muted)">${escHtml(i.area)||'—'}</td>
+        <td>${slPriorityBadge(i.priority)}</td>
+        <td>
+          <select class="status-sel" onchange="quickStatusShortlist('${i.id}', this.value)">
+            ${['Considering','Shortlisted','Rejected'].map(s=>`<option${s===i.status?' selected':''}>${s}</option>`).join('')}
+          </select>
+        </td>
+        <td style="color:var(--muted);font-size:0.8rem;max-width:160px">${escHtml(i.notes)||'—'}</td>
+        <td><button style="background:none;border:none;cursor:pointer;color:var(--muted)" onclick="openShortlistModal('${i.id}')">✏️</button></td>
+      </tr>`;
+    });
+  });
+  if (!html) html = `<tr><td colspan="12" style="color:var(--muted);padding:20px;text-align:center">No items yet — click + Add Item to start planning.</td></tr>`;
+  tbody.innerHTML = html;
+
+  // Totals row
+  const grandTotal = S.shortlist.reduce((a,i) => a + (Number(i.price)||0)*(Number(i.qty)||1), 0);
+  document.getElementById('shortlistTotals').innerHTML = `
+    <td colspan="6" style="text-align:right;padding:10px 12px">Total Est. Cost</td>
+    <td style="padding:10px 12px">${fmtMoney(grandTotal)}</td>
+    <td colspan="5"></td>`;
+
+  renderShortlistSummary();
+}
+
+function renderShortlistSummary() {
+  const el = document.getElementById('shortlistSummary');
+  if (!el) return;
+  const total = S.shortlist.length;
+  if (!total) { el.innerHTML = '<div class="panel-empty">Add items to see a summary.</div>'; return; }
+
+  const byStatus = { Considering: 0, Shortlisted: 0, Rejected: 0 };
+  const byPriority = { High: 0, Medium: 0, Low: 0 };
+  let grandTotal = 0, shortlistedTotal = 0;
+  S.shortlist.forEach(i => {
+    const t = (Number(i.price)||0) * (Number(i.qty)||1);
+    grandTotal += t;
+    byStatus[i.status] = (byStatus[i.status]||0) + 1;
+    byPriority[i.priority] = (byPriority[i.priority]||0) + 1;
+    if (i.status === 'Shortlisted') shortlistedTotal += t;
+  });
+
+  el.innerHTML = `
+    <div class="sl-summary-block">
+      <div class="sl-summary-label">Items</div>
+      <div class="sl-summary-row"><span>Total</span><span>${total}</span></div>
+      <div class="sl-summary-row"><span style="color:var(--muted)">Considering</span><span>${byStatus.Considering||0}</span></div>
+      <div class="sl-summary-row"><span style="color:var(--green)">Shortlisted</span><span>${byStatus.Shortlisted||0}</span></div>
+      <div class="sl-summary-row"><span style="color:var(--red)">Rejected</span><span>${byStatus.Rejected||0}</span></div>
+    </div>
+    <div class="sl-summary-block" style="border-top:1px solid var(--border);padding-top:12px">
+      <div class="sl-summary-label">Priority</div>
+      <div class="sl-summary-row"><span style="color:var(--red)">High</span><span>${byPriority.High||0}</span></div>
+      <div class="sl-summary-row"><span style="color:var(--yellow)">Medium</span><span>${byPriority.Medium||0}</span></div>
+      <div class="sl-summary-row"><span style="color:var(--muted)">Low</span><span>${byPriority.Low||0}</span></div>
+    </div>
+    <div class="sl-summary-block" style="border-top:1px solid var(--border);padding-top:12px">
+      <div class="sl-summary-label">Est. Cost</div>
+      <div class="sl-summary-row"><span>All items</span><span>${fmtMoney(grandTotal)}</span></div>
+      <div class="sl-summary-row"><span style="color:var(--green)">Shortlisted only</span><span>${fmtMoney(shortlistedTotal)}</span></div>
+    </div>`;
+}
+
+function openShortlistModal(id) {
+  currentShortlistId = id || null;
+  const isNew = !id;
+  document.getElementById('slModalTitle').textContent = isNew ? 'New Shortlist Item' : 'Edit Item';
+  document.getElementById('slDelBtn').style.display = isNew ? 'none' : 'inline-block';
+
+  if (id) {
+    const i = S.shortlist.find(x => x.id === id);
+    if (i) {
+      document.getElementById('sl_cat').value      = i.category;
+      document.getElementById('sl_area').value     = i.area;
+      document.getElementById('sl_name').value     = i.name;
+      document.getElementById('sl_brand').value    = i.brand;
+      document.getElementById('sl_link').value     = i.link;
+      document.getElementById('sl_price').value    = i.price;
+      document.getElementById('sl_qty').value      = i.qty;
+      document.getElementById('sl_priority').value = i.priority;
+      document.getElementById('sl_status').value   = i.status;
+      document.getElementById('sl_notes').value    = i.notes;
+    }
+  } else {
+    ['sl_cat','sl_area','sl_name','sl_brand','sl_link','sl_notes'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('sl_price').value    = 0;
+    document.getElementById('sl_qty').value      = 1;
+    document.getElementById('sl_priority').value = 'Medium';
+    document.getElementById('sl_status').value   = 'Considering';
+  }
+  document.getElementById('shortlistModal').style.display = 'flex';
+}
+
+async function saveShortlistItem() {
+  const cat  = document.getElementById('sl_cat').value.trim();
+  const name = document.getElementById('sl_name').value.trim();
+  if (!cat || !name) { alert('Category and item name are required'); return; }
+  const body = {
+    category: cat,
+    name,
+    brand:    document.getElementById('sl_brand').value.trim(),
+    link:     document.getElementById('sl_link').value.trim(),
+    price:    parseFloat(document.getElementById('sl_price').value) || 0,
+    qty:      parseInt(document.getElementById('sl_qty').value) || 1,
+    area:     document.getElementById('sl_area').value.trim(),
+    priority: document.getElementById('sl_priority').value,
+    status:   document.getElementById('sl_status').value,
+    notes:    document.getElementById('sl_notes').value.trim(),
+    added_by: S.user
+  };
+  if (currentShortlistId) {
+    const r = await api('PUT', `/api/shortlist/${currentShortlistId}`, body);
+    const idx = S.shortlist.findIndex(x => x.id === currentShortlistId);
+    if (idx >= 0) S.shortlist[idx] = r.item;
+  } else {
+    const r = await api('POST', '/api/shortlist', body);
+    S.shortlist.push(r.item);
+  }
+  closeModal('shortlistModal');
+  renderShortlist();
+}
+
+async function quickStatusShortlist(id, newStatus) {
+  const r = await api('PUT', `/api/shortlist/${id}`, { status: newStatus });
+  const idx = S.shortlist.findIndex(x => x.id === id);
+  if (idx >= 0) S.shortlist[idx] = r.item;
+  renderShortlistSummary();
+}
+
+async function deleteShortlistItem() {
+  if (!confirm('Delete this item?')) return;
+  await api('DELETE', `/api/shortlist/${currentShortlistId}`);
+  S.shortlist = S.shortlist.filter(x => x.id !== currentShortlistId);
+  closeModal('shortlistModal');
+  renderShortlist();
 }
 
 // ═══════════════════════════════════════════════════════════════

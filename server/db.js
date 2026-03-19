@@ -57,6 +57,22 @@ db.exec(`
     timestamp TEXT DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS shortlist (
+    id TEXT PRIMARY KEY,
+    category TEXT NOT NULL,
+    name TEXT NOT NULL,
+    brand TEXT DEFAULT '',
+    link TEXT DEFAULT '',
+    price REAL DEFAULT 0,
+    qty INTEGER DEFAULT 1,
+    area TEXT DEFAULT '',
+    priority TEXT DEFAULT 'Medium',
+    status TEXT DEFAULT 'Considering',
+    notes TEXT DEFAULT '',
+    added_by TEXT DEFAULT '',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT DEFAULT ''

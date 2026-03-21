@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kingsley Hills SL-05b</title>
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <style>
 :root {
   --marcus: #2E75B6;
@@ -511,7 +514,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <h2>Home Design</h2>
       <button class="btn-add" onclick="document.getElementById('imgUploadInput').click()">+ Upload Image</button>
       <button class="btn-add" style="background:var(--card);color:var(--accent);border:1px solid var(--accent)" onclick="document.getElementById('modelUploadInput').click()">+ Upload 3D Model</button>
-      <input type="file" id="modelUploadInput" accept=".glb,.gltf" style="display:none" onchange="uploadDesignFile(this,'model')">
+      <input type="file" id="modelUploadInput" accept=".glb,.gltf,.stl" style="display:none" onchange="uploadDesignFile(this,'model')">
       <input type="file" id="imgUploadInput" accept="image/*" style="display:none" onchange="uploadDesignFile(this,'image')">
     </div>
 
@@ -527,7 +530,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
             <div class="big-icon">🏠</div>
             <div>No 3D model uploaded yet</div>
             <div style="font-size:0.78rem;text-align:center;max-width:260px;line-height:1.5">
-              Export your SketchUp model as <strong>.glb</strong> and upload it here.<br>
+              Upload a <strong>.stl</strong> or <strong>.glb</strong> model file here.<br>
               <span style="color:var(--accent);cursor:pointer" onclick="showExportHelp()">How to export from SketchUp Free →</span>
             </div>
           </div>
@@ -556,10 +559,18 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
           <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem" onclick="hideExportHelp()">✕</button>
         </div>
         <div style="font-size:0.85rem;line-height:1.8;color:var(--text)">
-          <div style="margin-bottom:8px"><span class="section-tag">Step 1</span> In SketchUp Free, go to <strong>File → Download → Collada (.dae)</strong></div>
-          <div style="margin-bottom:8px"><span class="section-tag">Step 2</span> Go to <strong><a href="https://products.aspose.app/3d/conversion/dae-to-glb" target="_blank" style="color:var(--accent)">Aspose DAE→GLB Converter</a></strong> (free, no sign-in) or use <strong>Blender</strong> (File → Import → Collada, then File → Export → glTF 2.0)</div>
-          <div style="margin-bottom:8px"><span class="section-tag">Step 3</span> Upload the exported <strong>.glb</strong> file here using the Upload 3D Model button</div>
-          <div style="color:var(--muted);font-size:0.8rem;margin-top:10px">Tip: keep your SketchUp model under 50 MB for best performance in the browser.</div>
+          <div style="margin-bottom:14px;padding:10px 14px;background:rgba(56,189,248,0.07);border-radius:8px;border-left:3px solid var(--accent)">
+            <strong>Easiest path — STL (no conversion needed)</strong>
+          </div>
+          <div style="margin-bottom:8px"><span class="section-tag">Step 1</span> In SketchUp Free, click the <strong>folder icon → Export → STL</strong></div>
+          <div style="margin-bottom:14px"><span class="section-tag">Step 2</span> Upload the <strong>.stl</strong> file here using the Upload 3D Model button. Done.</div>
+          <div style="margin-bottom:6px;color:var(--muted);font-size:0.8rem">Note: STL shows geometry only (no colours or textures). For a coloured model, use the GLB path below.</div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+          <div style="margin-bottom:8px"><strong>Coloured model — GLB via online converter</strong></div>
+          <div style="margin-bottom:8px"><span class="section-tag">Step 1</span> In SketchUp Free, click the <strong>folder icon → Download → SKP</strong></div>
+          <div style="margin-bottom:8px"><span class="section-tag">Step 2</span> Go to <strong><a href="https://www.convertio.co/skp-glb/" target="_blank" style="color:var(--accent)">Convertio SKP→GLB</a></strong> (free, no sign-in needed) and convert the file</div>
+          <div style="margin-bottom:8px"><span class="section-tag">Step 3</span> Upload the <strong>.glb</strong> file here using the Upload 3D Model button</div>
+          <div style="color:var(--muted);font-size:0.8rem;margin-top:10px">Tip: keep your model under 50 MB for best performance in the browser.</div>
         </div>
       </div>
     </div>
@@ -1904,25 +1915,41 @@ function renderDesign() {
       activeModelId = models[0].id;
     }
     const active = models.find(m => m.id === activeModelId);
-    // Render viewer
+    // Render viewer — GLB via model-viewer, STL via Three.js
     if (wrap) {
-      // Remove old viewer if src changed
-      const existing = wrap.querySelector('model-viewer');
       const newSrc = `/uploads/${active.filename}`;
-      if (!existing || existing.getAttribute('src') !== newSrc) {
-        if (existing) existing.remove();
+      const isSTL  = active.filename.toLowerCase().endsWith('.stl');
+      const currentSrc = wrap.dataset.activeSrc;
+
+      if (currentSrc !== newSrc) {
+        // Clear previous viewer
+        wrap.dataset.activeSrc = newSrc;
         if (empty) empty.style.display = 'none';
-        const mv = document.createElement('model-viewer');
-        mv.setAttribute('src', newSrc);
-        mv.setAttribute('alt', active.label || active.original_name);
-        mv.setAttribute('camera-controls', '');
-        mv.setAttribute('auto-rotate', '');
-        mv.setAttribute('shadow-intensity', '1');
-        mv.setAttribute('environment-image', 'neutral');
-        mv.style.width  = '100%';
-        mv.style.height = '480px';
-        mv.style.background = '#0a1628';
-        wrap.appendChild(mv);
+        // Remove old elements
+        const oldMv     = wrap.querySelector('model-viewer');
+        const oldCanvas = wrap.querySelector('canvas');
+        if (oldMv)     oldMv.remove();
+        if (oldCanvas) oldCanvas.remove();
+        // Stop previous STL animation if any
+        if (wrap._stlAnimId)    { cancelAnimationFrame(wrap._stlAnimId); wrap._stlAnimId = null; }
+        if (wrap._stlRenderer)  { wrap._stlRenderer.dispose(); wrap._stlRenderer = null; }
+        if (wrap._stlResizeObs) { wrap._stlResizeObs.disconnect(); wrap._stlResizeObs = null; }
+
+        if (isSTL) {
+          mountSTLViewer(wrap, newSrc);
+        } else {
+          const mv = document.createElement('model-viewer');
+          mv.setAttribute('src', newSrc);
+          mv.setAttribute('alt', active.label || active.original_name);
+          mv.setAttribute('camera-controls', '');
+          mv.setAttribute('auto-rotate', '');
+          mv.setAttribute('shadow-intensity', '1');
+          mv.setAttribute('environment-image', 'neutral');
+          mv.style.width  = '100%';
+          mv.style.height = '480px';
+          mv.style.background = '#0a1628';
+          wrap.appendChild(mv);
+        }
       }
     }
     // Model list
@@ -1959,11 +1986,97 @@ function renderDesign() {
 
 function selectModel(id) {
   activeModelId = id;
-  // Remove existing viewer to force re-render with new src
   const wrap = document.getElementById('modelViewerWrap');
-  const mv = wrap ? wrap.querySelector('model-viewer') : null;
-  if (mv) mv.remove();
+  if (wrap) wrap.dataset.activeSrc = ''; // force re-mount
   renderDesign();
+}
+
+function mountSTLViewer(container, url) {
+  const W = container.clientWidth || 600;
+  const H = 480;
+
+  const scene    = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a1628);
+
+  const camera   = new THREE.PerspectiveCamera(45, W / H, 0.01, 10000);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(1, 2, 3);
+  scene.add(sun);
+  const fill = new THREE.DirectionalLight(0x88aaff, 0.3);
+  fill.position.set(-2, -1, -1);
+  scene.add(fill);
+
+  // Grid helper (subtle)
+  const grid = new THREE.GridHelper(1000, 40, 0x1e3a5f, 0x1e3a5f);
+  scene.add(grid);
+
+  // Controls
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+
+  // Load STL
+  const loader = new THREE.STLLoader();
+  loader.load(url, (geometry) => {
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+
+    // Centre geometry
+    const box    = geometry.boundingBox;
+    const centre = new THREE.Vector3();
+    box.getCenter(centre);
+    geometry.translate(-centre.x, -centre.y, -centre.z);
+
+    const size   = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    const mat  = new THREE.MeshPhongMaterial({ color: 0x2E75B6, shininess: 60, specular: 0x334466 });
+    const mesh = new THREE.Mesh(geometry, mat);
+    // Sit on grid
+    mesh.position.y = size.z / 2;
+    scene.add(mesh);
+
+    // Position camera nicely
+    const dist = maxDim * 1.8;
+    camera.position.set(dist, dist * 0.7, dist);
+    camera.lookAt(0, size.z / 2, 0);
+    controls.target.set(0, size.z / 2, 0);
+    controls.update();
+
+    // Reposition grid
+    grid.scale.setScalar(maxDim / 50);
+  }, undefined, (err) => {
+    console.error('STL load error', err);
+  });
+
+  // Animation loop
+  function animate() {
+    container._stlAnimId = requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Keep renderer reference for cleanup
+  container._stlRenderer = renderer;
+
+  // Handle resize
+  const ro = new ResizeObserver(() => {
+    const w = container.clientWidth;
+    renderer.setSize(w, H);
+    camera.aspect = w / H;
+    camera.updateProjectionMatrix();
+  });
+  ro.observe(container);
+  container._stlResizeObs = ro;
 }
 
 async function uploadDesignFile(input, type) {

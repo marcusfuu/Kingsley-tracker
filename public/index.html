@@ -355,6 +355,23 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 /* Scrollable tables */
 .table-wrap { overflow-x: auto; }
 
+/* Shortlist filter bar */
+.sl-filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.sl-search {
+  padding: 7px 12px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 0.85rem; width: 220px;
+}
+.sl-search:focus { outline: none; border-color: var(--accent); }
+.sl-search::placeholder { color: var(--muted); }
+.sl-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+.cat-pill {
+  padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border);
+  background: none; color: var(--muted); font-size: 0.8rem; cursor: pointer;
+  white-space: nowrap; transition: all 0.12s;
+}
+.cat-pill:hover { border-color: var(--text); color: var(--text); }
+.cat-pill.active { background: var(--accent); border-color: var(--accent); color: #0f172a; font-weight: 700; }
+
 /* Totals row */
 .totals-row td { font-weight: 700; border-top: 2px solid var(--border); background: rgba(56,189,248,0.05); }
 
@@ -512,6 +529,13 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
           <h2>Shortlist</h2>
           <span style="font-size:0.8rem;color:var(--muted);flex:1">Items under consideration — not yet confirmed</span>
           <button class="btn-add" onclick="openShortlistModal()">+ Add Item</button>
+        </div>
+        <!-- Filter bar -->
+        <div class="sl-filter-bar" id="slFilterBar">
+          <input class="sl-search" id="slSearch" type="text" placeholder="🔍  Search items, brands, notes…" oninput="setSlSearch(this.value)">
+          <div class="sl-divider"></div>
+          <span style="font-size:0.78rem;color:var(--muted);white-space:nowrap">Category:</span>
+          <div id="slCatPills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
         </div>
         <div class="table-wrap">
           <table id="shortlistTable">
@@ -717,6 +741,7 @@ const S = {
 };
 
 let currentShortlistId = null;
+let slFilter = { cat: 'All', query: '' };
 
 let currentTaskId = null;
 let currentInvId  = null;
@@ -1305,14 +1330,56 @@ function slStatusBadge(s) {
   return `<span class="badge ${map[s]||'badge-cons'}">${s}</span>`;
 }
 
+function setSlCat(cat) {
+  slFilter.cat = cat;
+  renderSlCatPills();
+  renderShortlist();
+}
+
+function setSlSearch(val) {
+  slFilter.query = val.toLowerCase().trim();
+  renderShortlist();
+}
+
+function renderSlCatPills() {
+  const allCats = [...new Set(S.shortlist.map(i => i.category))].sort();
+  const pills = document.getElementById('slCatPills');
+  if (!pills) return;
+  const options = ['All', ...allCats];
+  pills.innerHTML = options.map(c =>
+    `<button class="cat-pill${slFilter.cat === c ? ' active' : ''}" onclick="setSlCat('${escHtml(c)}')">${escHtml(c)}</button>`
+  ).join('');
+}
+
 function renderShortlist() {
   const tbody = document.getElementById('shortlistTbody');
   if (!tbody) return;
 
-  const cats = [...new Set(S.shortlist.map(i => i.category))].sort();
+  renderSlCatPills();
+
+  // Apply filters
+  let visible = S.shortlist;
+  if (slFilter.cat !== 'All') {
+    visible = visible.filter(i => i.category === slFilter.cat);
+  }
+  if (slFilter.query) {
+    const q = slFilter.query;
+    visible = visible.filter(i =>
+      (i.name||'').toLowerCase().includes(q) ||
+      (i.brand||'').toLowerCase().includes(q) ||
+      (i.category||'').toLowerCase().includes(q) ||
+      (i.area||'').toLowerCase().includes(q) ||
+      (i.notes||'').toLowerCase().includes(q)
+    );
+  }
+
+  const cats = [...new Set(visible.map(i => i.category))].sort();
   let html = '';
+  if (!visible.length) {
+    html = `<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--muted)">No items match your filter.</td></tr>`;
+  }
   cats.forEach(cat => {
-    const items = S.shortlist.filter(i => i.category === cat);
+    const items = visible.filter(i => i.category === cat);
     html += `<tr class="phase-row"><td colspan="12" style="color:var(--accent)">${escHtml(cat)}</td></tr>`;
     items.forEach(i => {
       const total = (Number(i.price)||0) * (Number(i.qty)||1);
@@ -1339,13 +1406,15 @@ function renderShortlist() {
       </tr>`;
     });
   });
-  if (!html) html = `<tr><td colspan="12" style="color:var(--muted);padding:20px;text-align:center">No items yet — click + Add Item to start planning.</td></tr>`;
   tbody.innerHTML = html;
 
-  // Totals row
-  const grandTotal = S.shortlist.reduce((a,i) => a + (Number(i.price)||0)*(Number(i.qty)||1), 0);
+  // Totals row — reflects filtered view
+  const grandTotal = visible.reduce((a,i) => a + (Number(i.price)||0)*(Number(i.qty)||1), 0);
+  const filteredLabel = (slFilter.cat !== 'All' || slFilter.query)
+    ? `Total (filtered — ${visible.length} item${visible.length !== 1 ? 's' : ''})`
+    : `Total Est. Cost (${visible.length} item${visible.length !== 1 ? 's' : ''})`;
   document.getElementById('shortlistTotals').innerHTML = `
-    <td colspan="6" style="text-align:right;padding:10px 12px">Total Est. Cost</td>
+    <td colspan="6" style="text-align:right;padding:10px 12px">${filteredLabel}</td>
     <td style="padding:10px 12px">${fmtMoney(grandTotal)}</td>
     <td colspan="5"></td>`;
 

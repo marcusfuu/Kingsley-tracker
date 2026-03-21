@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kingsley Hills SL-05b</title>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 <style>
 :root {
   --marcus: #2E75B6;
@@ -380,6 +381,76 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 /* Totals row */
 .totals-row td { font-weight: 700; border-top: 2px solid var(--border); background: rgba(56,189,248,0.05); }
 
+/* ── Home Design ── */
+.design-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .design-layout { grid-template-columns: 1fr; } }
+
+.model-viewer-wrap {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; position: relative; min-height: 420px;
+}
+.model-viewer-wrap model-viewer {
+  width: 100%; height: 480px; background: #0a1628;
+}
+.model-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 420px; color: var(--muted); gap: 12px; font-size: 0.9rem;
+}
+.model-empty .big-icon { font-size: 3rem; }
+.model-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.model-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; transition: border-color 0.12s;
+}
+.model-item:hover { border-color: var(--accent); }
+.model-item.active { border-color: var(--accent); background: rgba(56,189,248,0.07); }
+.model-item-name { flex: 1; font-size: 0.85rem; font-weight: 500; }
+.model-item-meta { font-size: 0.75rem; color: var(--muted); }
+
+.image-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px; margin-top: 12px;
+}
+.img-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  overflow: hidden; cursor: pointer; transition: border-color 0.12s, transform 0.1s;
+}
+.img-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.img-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+.img-card-footer {
+  padding: 7px 10px; display: flex; align-items: center; gap: 6px; font-size: 0.78rem;
+}
+.img-card-label { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.img-card-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.75rem; padding: 2px 4px; }
+.img-card-del:hover { color: var(--red); }
+
+.section-tag {
+  display: inline-block; padding: 1px 7px; border-radius: 10px;
+  font-size: 0.7rem; font-weight: 600; background: rgba(56,189,248,0.15); color: var(--accent);
+  margin-bottom: 4px;
+}
+
+/* Lightbox */
+.lightbox-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 20px;
+}
+.lightbox-overlay img { max-width: 100%; max-height: 90vh; border-radius: 6px; }
+.lightbox-close {
+  position: absolute; top: 16px; right: 20px; background: none; border: none;
+  color: #fff; font-size: 2rem; cursor: pointer; line-height: 1;
+}
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: 8px; padding: 20px;
+  text-align: center; color: var(--muted); font-size: 0.85rem; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.upload-zone:hover { border-color: var(--accent); color: var(--accent); }
+
 @media (max-width: 700px) {
   .page { padding: 12px; }
   header { padding: 10px 14px; }
@@ -425,6 +496,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   </header>
   <nav>
     <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="showPage('design')">Home Design</button>
     <button class="nav-btn" onclick="showPage('tasks')">Action Plan</button>
     <button class="nav-btn" onclick="showPage('inventory')">Inventory</button>
     <button class="nav-btn" onclick="showPage('reno')">Renovation</button>
@@ -432,6 +504,66 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <button class="nav-btn" onclick="showPage('scratchpad')">Scratchpad</button>
     <button class="nav-btn" onclick="showPage('settings')">Settings</button>
   </nav>
+
+  <!-- Home Design -->
+  <div class="page" id="page-design">
+    <div class="section-header" style="margin-bottom:20px">
+      <h2>Home Design</h2>
+      <button class="btn-add" onclick="document.getElementById('imgUploadInput').click()">+ Upload Image</button>
+      <button class="btn-add" style="background:var(--card);color:var(--accent);border:1px solid var(--accent)" onclick="document.getElementById('modelUploadInput').click()">+ Upload 3D Model</button>
+      <input type="file" id="modelUploadInput" accept=".glb,.gltf" style="display:none" onchange="uploadDesignFile(this,'model')">
+      <input type="file" id="imgUploadInput" accept="image/*" style="display:none" onchange="uploadDesignFile(this,'image')">
+    </div>
+
+    <div class="design-layout">
+      <!-- Left: 3D viewer + model list -->
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <h3 style="font-size:0.95rem;font-weight:700">3D Model</h3>
+          <span style="font-size:0.78rem;color:var(--muted)">Click a model below to view — drag to orbit, scroll to zoom</span>
+        </div>
+        <div class="model-viewer-wrap" id="modelViewerWrap">
+          <div class="model-empty" id="modelEmpty">
+            <div class="big-icon">🏠</div>
+            <div>No 3D model uploaded yet</div>
+            <div style="font-size:0.78rem;text-align:center;max-width:260px;line-height:1.5">
+              Export your SketchUp model as <strong>.glb</strong> and upload it here.<br>
+              <span style="color:var(--accent);cursor:pointer" onclick="showExportHelp()">How to export from SketchUp Free →</span>
+            </div>
+          </div>
+        </div>
+        <div class="model-list" id="modelList"></div>
+      </div>
+
+      <!-- Right: Image gallery -->
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <h3 style="font-size:0.95rem;font-weight:700">Design Images</h3>
+          <span style="font-size:0.78rem;color:var(--muted)">Renders, floor plans, mood boards</span>
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('imgUploadInput').click()">
+          Click to upload image
+        </div>
+        <div class="image-grid" id="imageGrid"></div>
+      </div>
+    </div>
+
+    <!-- Export help panel (hidden) -->
+    <div id="exportHelp" style="display:none;margin-top:24px">
+      <div class="card" style="max-width:640px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <h3 style="font-size:0.95rem;font-weight:700;flex:1">Exporting from SketchUp Free → GLB</h3>
+          <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem" onclick="hideExportHelp()">✕</button>
+        </div>
+        <div style="font-size:0.85rem;line-height:1.8;color:var(--text)">
+          <div style="margin-bottom:8px"><span class="section-tag">Step 1</span> In SketchUp Free, go to <strong>File → Download → Collada (.dae)</strong></div>
+          <div style="margin-bottom:8px"><span class="section-tag">Step 2</span> Go to <strong><a href="https://products.aspose.app/3d/conversion/dae-to-glb" target="_blank" style="color:var(--accent)">Aspose DAE→GLB Converter</a></strong> (free, no sign-in) or use <strong>Blender</strong> (File → Import → Collada, then File → Export → glTF 2.0)</div>
+          <div style="margin-bottom:8px"><span class="section-tag">Step 3</span> Upload the exported <strong>.glb</strong> file here using the Upload 3D Model button</div>
+          <div style="color:var(--muted);font-size:0.8rem;margin-top:10px">Tip: keep your SketchUp model under 50 MB for best performance in the browser.</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Dashboard -->
   <div class="page active" id="page-dashboard">
@@ -751,7 +883,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 // ═══════════════════════════════════════════════════════════════
 const S = {
   pin: '', user: '',
-  tasks: [], inventory: [], reno: [], scratch: [], shortlist: [],
+  tasks: [], inventory: [], reno: [], scratch: [], shortlist: [], design: [],
   settings: {}, actCounts: {},
   actFeeds: { task: [], inventory: [], reno: [] }
 };
@@ -839,7 +971,7 @@ async function api(method, url, body) {
 // LOAD ALL
 // ═══════════════════════════════════════════════════════════════
 async function loadAll() {
-  const [tr, ir, rr, sr, setr, acr, aft, afi, afr, slr] = await Promise.all([
+  const [tr, ir, rr, sr, setr, acr, aft, afi, afr, slr, dr] = await Promise.all([
     api('GET', '/api/tasks'),
     api('GET', '/api/inventory'),
     api('GET', '/api/reno'),
@@ -849,7 +981,8 @@ async function loadAll() {
     api('GET', '/api/activity/task'),
     api('GET', '/api/activity/inventory'),
     api('GET', '/api/activity/reno'),
-    api('GET', '/api/shortlist')
+    api('GET', '/api/shortlist'),
+    api('GET', '/api/design')
   ]);
   S.tasks     = tr.tasks;
   S.inventory = ir.items;
@@ -859,11 +992,13 @@ async function loadAll() {
   S.settings  = setr.settings;
   S.actCounts = acr.counts;
   S.actFeeds  = { task: aft.entries, inventory: afi.entries, reno: afr.entries };
+  S.design    = dr.assets;
   renderAll();
 }
 
 function renderAll() {
   renderDashboard();
+  renderDesign();
   renderTasks();
   renderInventory();
   renderReno();
@@ -883,7 +1018,7 @@ function showPage(id) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   const btns = document.querySelectorAll('.nav-btn');
-  const labels = ['dashboard','tasks','inventory','reno','shortlist','scratchpad','settings'];
+  const labels = ['dashboard','design','tasks','inventory','reno','shortlist','scratchpad','settings'];
   const idx = labels.indexOf(id);
   if (idx >= 0) btns[idx].classList.add('active');
 }
@@ -1744,6 +1879,146 @@ function closeModal(id) {
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
 });
+
+// ═══════════════════════════════════════════════════════════════
+// HOME DESIGN
+// ═══════════════════════════════════════════════════════════════
+let activeModelId = null;
+
+function renderDesign() {
+  const models = S.design.filter(a => a.type === 'model');
+  const images = S.design.filter(a => a.type === 'image');
+
+  // ── 3D model viewer ──
+  const wrap  = document.getElementById('modelViewerWrap');
+  const empty = document.getElementById('modelEmpty');
+  const list  = document.getElementById('modelList');
+
+  if (models.length === 0) {
+    if (empty) empty.style.display = 'flex';
+    if (list)  list.innerHTML = '';
+  } else {
+    if (empty) empty.style.display = 'none';
+    // Auto-select first if nothing active or active was deleted
+    if (!activeModelId || !models.find(m => m.id === activeModelId)) {
+      activeModelId = models[0].id;
+    }
+    const active = models.find(m => m.id === activeModelId);
+    // Render viewer
+    if (wrap) {
+      // Remove old viewer if src changed
+      const existing = wrap.querySelector('model-viewer');
+      const newSrc = `/uploads/${active.filename}`;
+      if (!existing || existing.getAttribute('src') !== newSrc) {
+        if (existing) existing.remove();
+        if (empty) empty.style.display = 'none';
+        const mv = document.createElement('model-viewer');
+        mv.setAttribute('src', newSrc);
+        mv.setAttribute('alt', active.label || active.original_name);
+        mv.setAttribute('camera-controls', '');
+        mv.setAttribute('auto-rotate', '');
+        mv.setAttribute('shadow-intensity', '1');
+        mv.setAttribute('environment-image', 'neutral');
+        mv.style.width  = '100%';
+        mv.style.height = '480px';
+        mv.style.background = '#0a1628';
+        wrap.appendChild(mv);
+      }
+    }
+    // Model list
+    if (list) {
+      list.innerHTML = models.map(m => `
+        <div class="model-item${m.id === activeModelId ? ' active' : ''}" onclick="selectModel('${m.id}')">
+          <span style="font-size:1.1rem">📦</span>
+          <div style="flex:1;min-width:0">
+            <div class="model-item-name">${escHtml(m.label || m.original_name)}</div>
+            <div class="model-item-meta">${m.created_at} · ${escHtml(m.uploaded_by)}</div>
+          </div>
+          <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem" onclick="event.stopPropagation();deleteDesignAsset('${m.id}')">✕</button>
+        </div>`).join('');
+    }
+  }
+
+  // ── Image gallery ──
+  const grid = document.getElementById('imageGrid');
+  if (grid) {
+    if (images.length === 0) {
+      grid.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;grid-column:1/-1;padding:8px 0">No images yet.</div>';
+    } else {
+      grid.innerHTML = images.map(img => `
+        <div class="img-card">
+          <img src="/uploads/${escHtml(img.filename)}" alt="${escHtml(img.label)}" onclick="openLightbox('/uploads/${escHtml(img.filename)}','${escHtml(img.label)}')">
+          <div class="img-card-footer">
+            <span class="img-card-label" title="${escHtml(img.label)}">${escHtml(img.label || img.original_name)}</span>
+            <button class="img-card-del" onclick="deleteDesignAsset('${img.id}')" title="Delete">✕</button>
+          </div>
+        </div>`).join('');
+    }
+  }
+}
+
+function selectModel(id) {
+  activeModelId = id;
+  // Remove existing viewer to force re-render with new src
+  const wrap = document.getElementById('modelViewerWrap');
+  const mv = wrap ? wrap.querySelector('model-viewer') : null;
+  if (mv) mv.remove();
+  renderDesign();
+}
+
+async function uploadDesignFile(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+  const label = prompt(`Label for "${file.name}":`, file.name.replace(/\.[^.]+$/, ''));
+  if (label === null) return; // cancelled
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    try {
+      const r = await api('POST', '/api/design/upload', {
+        filename: file.name,
+        data: base64,
+        type,
+        label: label || file.name,
+        uploaded_by: S.user
+      });
+      S.design.unshift(r.asset);
+      if (type === 'model') activeModelId = r.asset.id;
+      renderDesign();
+    } catch(err) {
+      alert('Upload failed: ' + err.message);
+    }
+  };
+  reader.readAsDataURL(file);
+  input.value = ''; // reset so same file can be re-selected
+}
+
+async function deleteDesignAsset(id) {
+  if (!confirm('Delete this file?')) return;
+  await api('DELETE', `/api/design/${id}`);
+  S.design = S.design.filter(a => a.id !== id);
+  if (activeModelId === id) activeModelId = null;
+  renderDesign();
+}
+
+function openLightbox(src, label) {
+  const overlay = document.createElement('div');
+  overlay.className = 'lightbox-overlay';
+  overlay.innerHTML = `
+    <button class="lightbox-close" onclick="this.parentElement.remove()">✕</button>
+    <img src="${src}" alt="${escHtml(label)}">`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function showExportHelp() {
+  const el = document.getElementById('exportHelp');
+  if (el) el.style.display = 'block';
+}
+function hideExportHelp() {
+  const el = document.getElementById('exportHelp');
+  if (el) el.style.display = 'none';
+}
 </script>
 </body>
 </html>

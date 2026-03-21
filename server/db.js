@@ -88,6 +88,17 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_activity ON activity_log(entity_type, entity_id);
+
+  CREATE TABLE IF NOT EXISTS design_assets (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    label TEXT DEFAULT '',
+    section TEXT DEFAULT 'general',
+    uploaded_by TEXT DEFAULT '',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Seed default settings

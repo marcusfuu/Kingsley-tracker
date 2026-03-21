@@ -1,10 +1,16 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const db = require('./db');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Serve uploaded design assets
+const uploadsDir = path.join(__dirname, '../data/uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+app.use('/uploads', express.static(uploadsDir));
 
 const PORT = process.env.PORT || 3000;
 const PIN  = process.env.APP_PIN || 'changeme';
@@ -67,7 +73,7 @@ app.post('/api/tasks', auth, (req, res) => {
 });
 
 app.put('/api/tasks/:id', auth, (req, res) => {
-  const allowed = ['status','notes','due_date','owner','name','detail','est_cost'];
+  const allowed = ['phase','num','name','detail','est_cost','owner','status','due_date','notes'];
   const fields = {};
   allowed.forEach(f => { if (req.body[f] !== undefined) fields[f] = req.body[f]; });
   if (!Object.keys(fields).length) return res.status(400).json({ error: 'No fields' });
@@ -236,6 +242,46 @@ app.post('/api/activity', auth, (req, res) => {
 
 app.delete('/api/activity/:id', auth, (req, res) => {
   db.prepare('DELETE FROM activity_log WHERE id=?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// ─── Design Assets ────────────────────────────────────────────────────────────
+app.get('/api/design', auth, (req, res) => {
+  const assets = db.prepare('SELECT * FROM design_assets ORDER BY created_at DESC').all();
+  res.json({ assets });
+});
+
+app.post('/api/design/upload', auth, (req, res) => {
+  const { filename, data, type, label, section, uploaded_by } = req.body;
+  if (!filename || !data || !type) return res.status(400).json({ error: 'Missing fields' });
+  const safe = Date.now() + '-' + filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const dest = path.join(uploadsDir, safe);
+  fs.writeFileSync(dest, Buffer.from(data, 'base64'));
+  const id = uid();
+  db.prepare(
+    `INSERT INTO design_assets (id,type,filename,original_name,label,section,uploaded_by,created_at)
+     VALUES (?,?,?,?,?,?,?,datetime('now','localtime'))`
+  ).run(id, type, safe, filename, label || filename, section || 'general', uploaded_by || '');
+  res.json({ asset: db.prepare('SELECT * FROM design_assets WHERE id=?').get(id) });
+});
+
+app.put('/api/design/:id', auth, (req, res) => {
+  const allowed = ['label', 'section'];
+  const fields = {};
+  allowed.forEach(f => { if (req.body[f] !== undefined) fields[f] = req.body[f]; });
+  if (!Object.keys(fields).length) return res.status(400).json({ error: 'No fields' });
+  const sets = Object.keys(fields).map(k => `${k}=?`).join(',');
+  db.prepare(`UPDATE design_assets SET ${sets} WHERE id=?`).run(...Object.values(fields), req.params.id);
+  res.json({ asset: db.prepare('SELECT * FROM design_assets WHERE id=?').get(req.params.id) });
+});
+
+app.delete('/api/design/:id', auth, (req, res) => {
+  const asset = db.prepare('SELECT * FROM design_assets WHERE id=?').get(req.params.id);
+  if (asset) {
+    const filePath = path.join(uploadsDir, asset.filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    db.prepare('DELETE FROM design_assets WHERE id=?').run(req.params.id);
+  }
   res.json({ ok: true });
 });
 

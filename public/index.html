@@ -363,14 +363,19 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 }
 .sl-search:focus { outline: none; border-color: var(--accent); }
 .sl-search::placeholder { color: var(--muted); }
-.sl-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
-.cat-pill {
-  padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border);
-  background: none; color: var(--muted); font-size: 0.8rem; cursor: pointer;
-  white-space: nowrap; transition: all 0.12s;
+.sl-select {
+  padding: 7px 10px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 0.85rem; cursor: pointer;
+  max-width: 180px;
 }
-.cat-pill:hover { border-color: var(--text); color: var(--text); }
-.cat-pill.active { background: var(--accent); border-color: var(--accent); color: #0f172a; font-weight: 700; }
+.sl-select:focus { outline: none; border-color: var(--accent); }
+.sl-select.filtered { border-color: var(--accent); color: var(--accent); }
+.sl-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+.notes-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--yellow); vertical-align: middle; cursor: default;
+  title: attr(data-notes);
+}
 
 /* Totals row */
 .totals-row td { font-weight: 700; border-top: 2px solid var(--border); background: rgba(56,189,248,0.05); }
@@ -534,8 +539,19 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
         <div class="sl-filter-bar" id="slFilterBar">
           <input class="sl-search" id="slSearch" type="text" placeholder="🔍  Search items, brands, notes…" oninput="setSlSearch(this.value)">
           <div class="sl-divider"></div>
-          <span style="font-size:0.78rem;color:var(--muted);white-space:nowrap">Category:</span>
-          <div id="slCatPills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          <select class="sl-select" id="slCatSelect" onchange="setSlCat(this.value)">
+            <option value="All">All Categories</option>
+          </select>
+          <select class="sl-select" id="slStatusSelect" onchange="setSlStatus(this.value)">
+            <option value="All">All Statuses</option>
+            <option>Considering</option>
+            <option>Shortlisted</option>
+            <option>Rejected</option>
+          </select>
+          <select class="sl-select" id="slRoomSelect" onchange="setSlRoom(this.value)">
+            <option value="All">All Rooms</option>
+          </select>
+          <button style="background:none;border:none;color:var(--muted);font-size:0.8rem;cursor:pointer;padding:4px 8px" onclick="resetSlFilters()" title="Clear filters">✕ Clear</button>
         </div>
         <div class="table-wrap">
           <table id="shortlistTable">
@@ -543,7 +559,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
               <tr>
                 <th>Category</th><th>Item</th><th>Brand</th>
                 <th>Link</th><th>Unit Price</th><th>Qty</th><th>Total</th>
-                <th>Room / Area</th><th>Priority</th><th>Status</th><th>Notes</th><th></th>
+                <th>Room / Area</th><th>Priority</th><th>Status</th><th title="Has notes">📝</th><th></th>
               </tr>
             </thead>
             <tbody id="shortlistTbody"></tbody>
@@ -741,7 +757,7 @@ const S = {
 };
 
 let currentShortlistId = null;
-let slFilter = { cat: 'All', query: '' };
+let slFilter = { cat: 'All', status: 'All', room: 'All', query: '' };
 
 let currentTaskId = null;
 let currentInvId  = null;
@@ -1330,38 +1346,59 @@ function slStatusBadge(s) {
   return `<span class="badge ${map[s]||'badge-cons'}">${s}</span>`;
 }
 
-function setSlCat(cat) {
-  slFilter.cat = cat;
-  renderSlCatPills();
+function setSlCat(val)    { slFilter.cat = val;    updateSlSelectStyle('slCatSelect', val);    renderShortlist(); }
+function setSlStatus(val) { slFilter.status = val;  updateSlSelectStyle('slStatusSelect', val);  renderShortlist(); }
+function setSlRoom(val)   { slFilter.room = val;    updateSlSelectStyle('slRoomSelect', val);    renderShortlist(); }
+function setSlSearch(val) { slFilter.query = val.toLowerCase().trim(); renderShortlist(); }
+
+function updateSlSelectStyle(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.className = 'sl-select' + (val !== 'All' ? ' filtered' : '');
+}
+
+function resetSlFilters() {
+  slFilter = { cat: 'All', status: 'All', room: 'All', query: '' };
+  const s = document.getElementById('slSearch');
+  if (s) s.value = '';
+  ['slCatSelect','slStatusSelect','slRoomSelect'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = 'All'; el.className = 'sl-select'; }
+  });
   renderShortlist();
 }
 
-function setSlSearch(val) {
-  slFilter.query = val.toLowerCase().trim();
-  renderShortlist();
-}
+function populateSlDropdowns() {
+  const cats  = [...new Set(S.shortlist.map(i => i.category).filter(Boolean))].sort();
+  const rooms = [...new Set(S.shortlist.map(i => i.area).filter(Boolean))].sort();
 
-function renderSlCatPills() {
-  const allCats = [...new Set(S.shortlist.map(i => i.category))].sort();
-  const pills = document.getElementById('slCatPills');
-  if (!pills) return;
-  const options = ['All', ...allCats];
-  pills.innerHTML = options.map(c =>
-    `<button class="cat-pill${slFilter.cat === c ? ' active' : ''}" onclick="setSlCat('${escHtml(c)}')">${escHtml(c)}</button>`
-  ).join('');
+  const catSel  = document.getElementById('slCatSelect');
+  const roomSel = document.getElementById('slRoomSelect');
+  if (!catSel || !roomSel) return;
+
+  const prevCat  = slFilter.cat;
+  const prevRoom = slFilter.room;
+
+  catSel.innerHTML  = '<option value="All">All Categories</option>'
+    + cats.map(c => `<option value="${escHtml(c)}"${c === prevCat ? ' selected' : ''}>${escHtml(c)}</option>`).join('');
+  roomSel.innerHTML = '<option value="All">All Rooms</option>'
+    + rooms.map(r => `<option value="${escHtml(r)}"${r === prevRoom ? ' selected' : ''}>${escHtml(r)}</option>`).join('');
+
+  // Restore status select value
+  const statusSel = document.getElementById('slStatusSelect');
+  if (statusSel) statusSel.value = slFilter.status;
 }
 
 function renderShortlist() {
   const tbody = document.getElementById('shortlistTbody');
   if (!tbody) return;
 
-  renderSlCatPills();
+  populateSlDropdowns();
 
   // Apply filters
   let visible = S.shortlist;
-  if (slFilter.cat !== 'All') {
-    visible = visible.filter(i => i.category === slFilter.cat);
-  }
+  if (slFilter.cat    !== 'All') visible = visible.filter(i => i.category === slFilter.cat);
+  if (slFilter.status !== 'All') visible = visible.filter(i => i.status   === slFilter.status);
+  if (slFilter.room   !== 'All') visible = visible.filter(i => i.area     === slFilter.room);
   if (slFilter.query) {
     const q = slFilter.query;
     visible = visible.filter(i =>
@@ -1401,7 +1438,7 @@ function renderShortlist() {
             ${['Considering','Shortlisted','Rejected'].map(s=>`<option${s===i.status?' selected':''}>${s}</option>`).join('')}
           </select>
         </td>
-        <td style="color:var(--muted);font-size:0.8rem;max-width:160px">${escHtml(i.notes)||'—'}</td>
+        <td style="text-align:center">${i.notes ? `<span class="notes-dot" title="${escHtml(i.notes)}"></span>` : ''}</td>
         <td><button style="background:none;border:none;cursor:pointer;color:var(--muted)" onclick="openShortlistModal('${i.id}')">✏️</button></td>
       </tr>`;
     });

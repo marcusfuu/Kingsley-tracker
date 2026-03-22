@@ -138,6 +138,8 @@ db.exec(`
 
 // Add url column to attachments (safe to run on existing DBs — fails silently if already exists)
 try { db.exec('ALTER TABLE attachments ADD COLUMN url TEXT DEFAULT NULL'); } catch(e) {}
+// Link shortlist items to confirmed inventory entries
+try { db.exec('ALTER TABLE shortlist ADD COLUMN inventory_id TEXT DEFAULT NULL'); } catch(e) {}
 
 // Seed default users (Marcus is protected — cannot be deleted)
 const insertUser = db.prepare('INSERT OR IGNORE INTO users (name, protected) VALUES (?, ?)');

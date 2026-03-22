@@ -101,7 +101,15 @@ app.post('/api/inventory', auth, (req, res) => {
     `INSERT INTO inventory (id,category,name,qty,unit,unit_price,supplier,status,notes)
      VALUES (?,?,?,?,?,?,?,?,?)`
   ).run(id, category, name, qty||1, unit||'unit', unit_price||0, supplier||'', status||'To Procure', notes||'');
-  res.json({ item: db.prepare('SELECT * FROM inventory WHERE id=?').get(id) });
+  // Auto-mirror to shortlist as Confirmed
+  const slId = uid();
+  db.prepare(
+    `INSERT INTO shortlist (id,category,name,brand,link,price,qty,area,priority,status,notes,added_by,inventory_id,created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`
+  ).run(slId, category, name, supplier||'', '', unit_price||0, qty||1, '', 'Medium', 'Confirmed', notes||'', '', id);
+  const item = db.prepare('SELECT * FROM inventory WHERE id=?').get(id);
+  const slItem = db.prepare('SELECT * FROM shortlist WHERE id=?').get(slId);
+  res.json({ item, slItem });
 });
 
 app.put('/api/inventory/:id', auth, (req, res) => {
@@ -115,6 +123,8 @@ app.put('/api/inventory/:id', auth, (req, res) => {
 });
 
 app.delete('/api/inventory/:id', auth, (req, res) => {
+  // Unlink any shortlist items that were confirmed from this inventory item
+  db.prepare("UPDATE shortlist SET inventory_id=NULL, status='Shortlisted' WHERE inventory_id=?").run(req.params.id);
   db.prepare('DELETE FROM inventory WHERE id=?').run(req.params.id);
   res.json({ ok: true });
 });
@@ -170,7 +180,7 @@ app.post('/api/shortlist', auth, (req, res) => {
 });
 
 app.put('/api/shortlist/:id', auth, (req, res) => {
-  const allowed = ['category','name','brand','link','price','qty','area','priority','status','notes','added_by'];
+  const allowed = ['category','name','brand','link','price','qty','area','priority','status','notes','added_by','inventory_id'];
   const fields = {};
   allowed.forEach(f => { if (req.body[f] !== undefined) fields[f] = req.body[f]; });
   if (!Object.keys(fields).length) return res.status(400).json({ error: 'No fields' });
@@ -182,6 +192,22 @@ app.put('/api/shortlist/:id', auth, (req, res) => {
 app.delete('/api/shortlist/:id', auth, (req, res) => {
   db.prepare('DELETE FROM shortlist WHERE id=?').run(req.params.id);
   res.json({ ok: true });
+});
+
+// Promote a shortlist item → create an inventory entry and link back
+app.post('/api/shortlist/:id/promote', auth, (req, res) => {
+  const sl = db.prepare('SELECT * FROM shortlist WHERE id=?').get(req.params.id);
+  if (!sl) return res.status(404).json({ error: 'Not found' });
+  if (sl.inventory_id) return res.status(409).json({ error: 'Already confirmed to Inventory' });
+  const invId = uid();
+  db.prepare(
+    `INSERT INTO inventory (id,category,name,qty,unit,unit_price,supplier,status,notes,created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`
+  ).run(invId, sl.category, sl.name, sl.qty||1, 'unit', sl.price||0, sl.brand||'', 'To Procure', sl.notes||'');
+  db.prepare("UPDATE shortlist SET inventory_id=?, status='Confirmed' WHERE id=?").run(invId, sl.id);
+  const invItem = db.prepare('SELECT * FROM inventory WHERE id=?').get(invId);
+  const slItem  = db.prepare('SELECT * FROM shortlist WHERE id=?').get(sl.id);
+  res.json({ invItem, slItem });
 });
 
 // ─── Scratchpad ───────────────────────────────────────────────────────────────

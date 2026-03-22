@@ -403,6 +403,11 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 .sl-summary-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
 .sl-summary-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 3px 0; }
 .sl-summary-row span:last-child { font-weight: 600; }
+.sl-confirmed-badge { display:inline-flex;align-items:center;gap:3px;font-size:0.75rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);border-radius:99px;padding:2px 9px; }
+.sl-confirmed-row { background: rgba(16,185,129,0.04); }
+.sl-promote-btn { font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:5px;border:1px solid var(--accent);background:none;color:var(--accent);cursor:pointer;white-space:nowrap; }
+.sl-promote-btn:hover { background:var(--accent);color:#0f172a; }
+.sl-inv-link-btn { background:none;border:none;cursor:pointer;font-size:1rem;padding:2px 4px; }
 
 /* ── Page split: table + notes panel ── */
 .page-split { display: flex; gap: 20px; align-items: flex-start; }
@@ -795,7 +800,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <div class="page-main">
         <div class="section-header">
           <h2>Shortlist</h2>
-          <span style="font-size:0.8rem;color:var(--muted);flex:1">Items under consideration — not yet confirmed</span>
+          <span style="font-size:0.8rem;color:var(--muted);flex:1">Planning &amp; confirmed items — ✅ Confirmed items are also in Inventory &amp; Costing</span>
           <button class="btn-add" onclick="openShortlistModal()">+ Add Item</button>
         </div>
         <div class="page-guide">
@@ -1539,17 +1544,21 @@ async function saveInv() {
   } else {
     const r = await api('POST', '/api/inventory', body);
     S.inventory.push(r.item);
+    // Auto-mirrored shortlist entry returned by server
+    if (r.slItem) S.shortlist.push(r.slItem);
   }
   closeModal('invModal');
-  renderInventory(); renderDashboard();
+  renderInventory(); renderShortlist(); renderDashboard();
 }
 
 async function deleteInv() {
   if (!confirm('Delete this item?')) return;
   await api('DELETE', `/api/inventory/${currentInvId}`);
   S.inventory = S.inventory.filter(x => x.id !== currentInvId);
+  // Unlink any shortlist items that were confirmed from this inventory item
+  S.shortlist.forEach(i => { if (i.inventory_id === currentInvId) { i.inventory_id = null; i.status = 'Shortlisted'; } });
   closeModal('invModal');
-  renderInventory(); renderDashboard();
+  renderInventory(); renderShortlist(); renderDashboard();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1772,7 +1781,18 @@ function renderShortlist() {
       const linkCell = i.link
         ? `<div class="link-cell"><a href="${escHtml(i.link)}" target="_blank" rel="noopener">🔗 View</a></div>`
         : '<span style="color:var(--muted)">—</span>';
-      html += `<tr>
+      const isConfirmed = !!i.inventory_id;
+      const statusCell = isConfirmed
+        ? `<span class="sl-confirmed-badge">✅ Confirmed</span>`
+        : `<select class="status-sel" onchange="quickStatusShortlist('${i.id}', this.value)">
+            ${['Considering','Shortlisted','Rejected'].map(s=>`<option${s===i.status?' selected':''}>${s}</option>`).join('')}
+           </select>`;
+      const actionCell = isConfirmed
+        ? `<button style="background:none;border:none;cursor:pointer;color:var(--muted)" onclick="openShortlistModal('${i.id}')">✏️</button>
+           <button class="sl-inv-link-btn" onclick="showPage('inventory')" title="View in Inventory">📦</button>`
+        : `<button style="background:none;border:none;cursor:pointer;color:var(--muted)" onclick="openShortlistModal('${i.id}')">✏️</button>
+           <button class="sl-promote-btn" onclick="promoteToInventory('${i.id}')" title="Confirm to Inventory">→ Inv</button>`;
+      html += `<tr${isConfirmed ? ' class="sl-confirmed-row"' : ''}>
         <td style="color:var(--muted)">${escHtml(i.category)}</td>
         <td style="cursor:pointer;font-weight:500" onclick="openShortlistModal('${i.id}')">${escHtml(i.name)}</td>
         <td style="color:var(--muted)">${escHtml(i.brand)||'—'}</td>
@@ -1782,13 +1802,9 @@ function renderShortlist() {
         <td style="font-weight:600">${fmtMoney(total)}</td>
         <td style="color:var(--muted)">${escHtml(i.area)||'—'}</td>
         <td>${slPriorityBadge(i.priority)}</td>
-        <td>
-          <select class="status-sel" onchange="quickStatusShortlist('${i.id}', this.value)">
-            ${['Considering','Shortlisted','Rejected'].map(s=>`<option${s===i.status?' selected':''}>${s}</option>`).join('')}
-          </select>
-        </td>
+        <td>${statusCell}</td>
         <td style="text-align:center">${i.notes ? `<span class="notes-dot" title="${escHtml(i.notes)}"></span>` : ''}</td>
-        <td><button style="background:none;border:none;cursor:pointer;color:var(--muted)" onclick="openShortlistModal('${i.id}')">✏️</button></td>
+        <td>${actionCell}</td>
       </tr>`;
     });
   });
@@ -1813,7 +1829,7 @@ function renderShortlistSummary() {
   const total = S.shortlist.length;
   if (!total) { el.innerHTML = '<div class="panel-empty">Add items to see a summary.</div>'; return; }
 
-  const byStatus = { Considering: 0, Shortlisted: 0, Rejected: 0 };
+  const byStatus = { Considering: 0, Shortlisted: 0, Confirmed: 0, Rejected: 0 };
   const byPriority = { High: 0, Medium: 0, Low: 0 };
   let grandTotal = 0, shortlistedTotal = 0;
   S.shortlist.forEach(i => {
@@ -1830,6 +1846,7 @@ function renderShortlistSummary() {
       <div class="sl-summary-row"><span>Total</span><span>${total}</span></div>
       <div class="sl-summary-row"><span style="color:var(--muted)">Considering</span><span>${byStatus.Considering||0}</span></div>
       <div class="sl-summary-row"><span style="color:var(--green)">Shortlisted</span><span>${byStatus.Shortlisted||0}</span></div>
+      <div class="sl-summary-row"><span style="color:#10b981">✅ Confirmed</span><span>${byStatus.Confirmed||0}</span></div>
       <div class="sl-summary-row"><span style="color:var(--red)">Rejected</span><span>${byStatus.Rejected||0}</span></div>
     </div>
     <div class="sl-summary-block" style="border-top:1px solid var(--border);padding-top:12px">
@@ -1842,6 +1859,7 @@ function renderShortlistSummary() {
       <div class="sl-summary-label">Est. Cost</div>
       <div class="sl-summary-row"><span>All items</span><span>${fmtMoney(grandTotal)}</span></div>
       <div class="sl-summary-row"><span style="color:var(--green)">Shortlisted only</span><span>${fmtMoney(shortlistedTotal)}</span></div>
+      <div class="sl-summary-row"><span style="color:#10b981">Confirmed (in Inventory)</span><span>${fmtMoney(S.shortlist.filter(i=>i.inventory_id).reduce((a,i)=>a+(Number(i.price)||0)*(Number(i.qty)||1),0))}</span></div>
     </div>`;
 }
 
@@ -1909,6 +1927,21 @@ async function quickStatusShortlist(id, newStatus) {
   const idx = S.shortlist.findIndex(x => x.id === id);
   if (idx >= 0) S.shortlist[idx] = r.item;
   renderShortlistSummary();
+}
+
+async function promoteToInventory(slId) {
+  if (!confirm('Move this item to Inventory & Costing?')) return;
+  try {
+    const r = await api('POST', `/api/shortlist/${slId}/promote`);
+    // Update shortlist item in memory
+    const idx = S.shortlist.findIndex(x => x.id === slId);
+    if (idx >= 0) S.shortlist[idx] = r.slItem;
+    // Add new inventory item to memory
+    S.inventory.push(r.invItem);
+    renderShortlist(); renderInventory(); renderDashboard();
+  } catch(e) {
+    alert(e.message || 'Could not promote item.');
+  }
 }
 
 async function deleteShortlistItem() {

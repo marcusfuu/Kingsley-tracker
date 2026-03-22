@@ -2694,18 +2694,13 @@ function refChipOnclick(et, eid) {
 // ═══════════════════════════════════════════════════════════════
 // NOTIFICATIONS + PHOTOS WIRED INTO LOAD + MODAL OPENS
 // ═══════════════════════════════════════════════════════════════
-// Patch launchApp to load notifications
-const _origLaunchApp = launchApp;
-function launchApp() {
-  _origLaunchApp();
-}
 // Called after loadAll completes — load notifications + welcome card
 const _origLoadAll = loadAll;
-async function loadAll() {
+loadAll = async function() {
   await _origLoadAll();
   loadNotifications();
   fetchAndRenderWhatsNew();
-}
+};
 
 // Patch modal opens to load photos
 const _origOpenInvModal = openInvModal;

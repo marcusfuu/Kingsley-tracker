@@ -62,18 +62,27 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
   min-width: 120px;
 }
 .user-card:hover { transform: translateY(-2px); opacity: 0.9; }
-.user-card.marcus { border-color: var(--marcus); background: rgba(46,117,182,0.15); }
-.user-card.lucas  { border-color: var(--lucas);  background: rgba(124,58,237,0.15); }
+.user-card.marcus  { border-color: var(--marcus);  background: rgba(46,117,182,0.15); }
+.user-card.lucas   { border-color: var(--lucas);   background: rgba(124,58,237,0.15); }
+.user-card.accent3 { border-color: #10b981; background: rgba(16,185,129,0.15); }
+.user-card.accent4 { border-color: #f59e0b; background: rgba(245,158,11,0.15); }
+.user-card.accent5 { border-color: #ef4444; background: rgba(239,68,68,0.15); }
 .user-card .avatar {
   width: 52px; height: 52px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 1.3rem; margin: 0 auto 10px;
 }
-.user-card.marcus .avatar { background: var(--marcus); color: #fff; }
-.user-card.lucas  .avatar { background: var(--lucas);  color: #fff; }
+.user-card.marcus  .avatar { background: var(--marcus); color: #fff; }
+.user-card.lucas   .avatar { background: var(--lucas);  color: #fff; }
+.user-card.accent3 .avatar { background: #10b981; color: #fff; }
+.user-card.accent4 .avatar { background: #f59e0b; color: #fff; }
+.user-card.accent5 .avatar { background: #ef4444; color: #fff; }
 .user-card .uname { font-weight: 700; font-size: 1rem; }
-.user-card.marcus .uname { color: var(--marcus); }
-.user-card.lucas  .uname { color: var(--lucas); }
+.user-card.marcus  .uname { color: var(--marcus); }
+.user-card.lucas   .uname { color: var(--lucas); }
+.user-card.accent3 .uname { color: #10b981; }
+.user-card.accent4 .uname { color: #f59e0b; }
+.user-card.accent5 .uname { color: #ef4444; }
 
 /* ── App shell ── */
 #app { display: none; }
@@ -335,8 +344,11 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 .notif-toast-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; flex-shrink: 0; }
 /* ── @mention ── */
 .mention { font-weight: 700; border-radius: 4px; padding: 0 3px; }
-.mention.marcus { color: var(--marcus); background: rgba(46,117,182,0.15); }
-.mention.lucas  { color: var(--lucas);  background: rgba(124,58,237,0.15); }
+.mention.marcus  { color: var(--marcus); background: rgba(46,117,182,0.15); }
+.mention.lucas   { color: var(--lucas);  background: rgba(124,58,237,0.15); }
+.mention.accent3 { color: #10b981; background: rgba(16,185,129,0.15); }
+.mention.accent4 { color: #f59e0b; background: rgba(245,158,11,0.15); }
+.mention.accent5 { color: #ef4444; background: rgba(239,68,68,0.15); }
 .mention-dropdown { position: absolute; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); z-index: 500; overflow: hidden; bottom: calc(100% + 4px); left: 0; }
 .mention-opt { padding: 9px 14px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
 .mention-opt:hover { background: rgba(255,255,255,0.06); }
@@ -562,16 +574,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 
   <div id="userSelect">
     <h2>Who are you?</h2>
-    <div class="user-cards">
-      <div class="user-card marcus" onclick="selectUser('Marcus')">
-        <div class="avatar">M</div>
-        <div class="uname">Marcus</div>
-      </div>
-      <div class="user-card lucas" onclick="selectUser('Lucas')">
-        <div class="avatar">L</div>
-        <div class="uname">Lucas</div>
-      </div>
-    </div>
+    <div class="user-cards" id="userCards"></div>
   </div>
 </div>
 
@@ -854,6 +857,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <div class="compose-toolbar">
         <button class="compose-icon-btn" onclick="document.getElementById('scratchPhotoInput').click()">📎 Photo</button>
         <input type="file" id="scratchPhotoInput" accept="image/*" multiple style="display:none" onchange="addPendingPhotos(this)">
+        <button class="compose-icon-btn" onclick="addPendingImageUrl()">🌐 Image URL</button>
         <button class="compose-icon-btn" onclick="toggleRefPicker()">🔗 Link Item</button>
         <button onclick="postScratch()" style="margin-left:auto;padding:8px 20px;background:var(--accent);color:#0f172a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Post Note</button>
       </div>
@@ -890,6 +894,17 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
         <input type="number" id="set_reno_budget">
       </div>
       <button class="btn-save" onclick="saveSettings()">Save Settings</button>
+    </div>
+
+    <div class="settings-card" style="margin-top:20px">
+      <h3>Users</h3>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px">Anyone with the PIN can log in and choose a name. Marcus cannot be removed.</p>
+      <div id="userMgmtList" style="margin-bottom:14px"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="newUserName" placeholder="New user name…" style="flex:1;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.9rem">
+        <button class="btn-save" onclick="addUser()">Add User</button>
+      </div>
+      <div id="userMgmtError" style="display:none;color:#f87171;font-size:0.82rem;margin-top:6px"></div>
     </div>
   </div>
 </div>
@@ -957,6 +972,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <div class="modal-photos-label">Photos</div>
       <div class="photo-grid" id="im_photoGrid"></div>
       <input type="file" id="im_photoInput" accept="image/*" multiple style="display:none" onchange="handleModalPhotoUpload(this,'inventory',()=>currentInvId)">
+      <button class="compose-icon-btn" style="margin-top:6px" onclick="addModalImageUrl('inventory',()=>currentInvId,'im_photoGrid')">🌐 Add Image URL</button>
     </div>
     <!-- Activity log -->
     <div class="act-section" id="im_actSection" style="display:none">
@@ -997,6 +1013,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <div class="modal-photos-label">Photos</div>
       <div class="photo-grid" id="rm_photoGrid"></div>
       <input type="file" id="rm_photoInput" accept="image/*" multiple style="display:none" onchange="handleModalPhotoUpload(this,'reno',()=>currentRenoId)">
+      <button class="compose-icon-btn" style="margin-top:6px" onclick="addModalImageUrl('reno',()=>currentRenoId,'rm_photoGrid')">🌐 Add Image URL</button>
     </div>
     <!-- Activity log -->
     <div class="act-section" id="rm_actSection" style="display:none">
@@ -1042,6 +1059,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <div class="modal-photos-label">Photos</div>
       <div class="photo-grid" id="sl_photoGrid"></div>
       <input type="file" id="sl_photoInput" accept="image/*" multiple style="display:none" onchange="handleModalPhotoUpload(this,'shortlist',()=>currentShortlistId)">
+      <button class="compose-icon-btn" style="margin-top:6px" onclick="addModalImageUrl('shortlist',()=>currentShortlistId,'sl_photoGrid')">🌐 Add Image URL</button>
     </div>
     <div class="modal-actions">
       <button class="btn-del" id="slDelBtn" onclick="deleteShortlistItem()" style="display:none">Delete</button>
@@ -1058,7 +1076,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 const S = {
   pin: '', user: '',
   tasks: [], inventory: [], reno: [], scratch: [], shortlist: [], design: [],
-  notifications: [],
+  notifications: [], users: [],
   settings: {}, actCounts: {},
   actFeeds: { task: [], inventory: [], reno: [] }
 };
@@ -1093,6 +1111,17 @@ async function checkPin() {
     });
     if (!r.ok) { err.style.display = 'block'; return; }
     S.pin = pin;
+    // Fetch users and render picker cards
+    const ur = await fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + pin } });
+    const { users } = await ur.json();
+    S.users = users.map(u => u.name);
+    const colors = ['marcus','lucas','accent3','accent4','accent5'];
+    document.getElementById('userCards').innerHTML = users.map((u, i) =>
+      `<div class="user-card ${colors[i % colors.length]}" onclick="selectUser('${escHtml(u.name)}')">
+        <div class="avatar">${escHtml(u.name.charAt(0).toUpperCase())}</div>
+        <div class="uname">${escHtml(u.name)}</div>
+      </div>`
+    ).join('');
     document.getElementById('pinBox').style.display = 'none';
     document.getElementById('userSelect').style.display = 'flex';
   } catch(e) { err.style.display = 'block'; }
@@ -1122,10 +1151,18 @@ function logout() {
 }
 
 // Restore session
-(function restoreSession() {
+(async function restoreSession() {
   const pin  = sessionStorage.getItem('kpin');
   const user = sessionStorage.getItem('kuser');
-  if (pin && user) { S.pin = pin; S.user = user; launchApp(); }
+  if (pin && user) {
+    S.pin = pin; S.user = user;
+    try {
+      const ur = await fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + pin } });
+      const { users } = await ur.json();
+      S.users = users.map(u => u.name);
+    } catch(e) {}
+    launchApp();
+  }
 })();
 
 // ═══════════════════════════════════════════════════════════════
@@ -1146,7 +1183,7 @@ async function api(method, url, body) {
 // LOAD ALL
 // ═══════════════════════════════════════════════════════════════
 async function loadAll() {
-  const [tr, ir, rr, sr, setr, acr, aft, afi, afr, slr, dr] = await Promise.all([
+  const [tr, ir, rr, sr, setr, acr, aft, afi, afr, slr, dr, ur] = await Promise.all([
     api('GET', '/api/tasks'),
     api('GET', '/api/inventory'),
     api('GET', '/api/reno'),
@@ -1157,7 +1194,8 @@ async function loadAll() {
     api('GET', '/api/activity/inventory'),
     api('GET', '/api/activity/reno'),
     api('GET', '/api/shortlist'),
-    api('GET', '/api/design')
+    api('GET', '/api/design'),
+    api('GET', '/api/users')
   ]);
   S.tasks     = tr.tasks;
   S.inventory = ir.items;
@@ -1168,6 +1206,7 @@ async function loadAll() {
   S.actCounts = acr.counts;
   S.actFeeds  = { task: aft.entries, inventory: afi.entries, reno: afr.entries };
   S.design    = dr.assets;
+  S.users     = ur.users.map(u => u.name);
   renderAll();
 }
 
@@ -1972,6 +2011,52 @@ function renderSettings() {
   document.getElementById('set_contractor_name').value = S.settings.contractor_name || '';
   document.getElementById('set_inv_budget').value      = S.settings.inv_budget || 100000;
   document.getElementById('set_reno_budget').value     = S.settings.reno_budget || 150000;
+  renderUserMgmt();
+}
+
+function renderUserMgmt() {
+  const el = document.getElementById('userMgmtList');
+  if (!el) return;
+  if (!S.users.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem">No users.</div>'; return; }
+  el.innerHTML = S.users.map(name => {
+    const isMe = name === S.user;
+    const isProtected = name === 'Marcus';
+    const delBtn = (!isProtected && !isMe)
+      ? `<button onclick="deleteUser('${escHtml(name)}')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:1rem;padding:2px 6px" title="Remove user">✕</button>`
+      : `<span style="color:var(--muted);font-size:0.75rem;margin-left:4px">${isProtected ? '🔒' : '(you)'}</span>`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surface2);border-radius:6px;margin-bottom:6px">
+      <span style="font-weight:500">${escHtml(name)}</span>
+      ${delBtn}
+    </div>`;
+  }).join('');
+}
+
+async function addUser() {
+  const input = document.getElementById('newUserName');
+  const errEl = document.getElementById('userMgmtError');
+  const name = input.value.trim();
+  errEl.style.display = 'none';
+  if (!name) return;
+  try {
+    await api('POST', '/api/users', { name });
+    S.users.push(name);
+    input.value = '';
+    renderUserMgmt();
+  } catch(e) {
+    errEl.textContent = e.message || 'Could not add user.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function deleteUser(name) {
+  if (!confirm(`Remove user "${name}"? They won't be able to log in.`)) return;
+  try {
+    await api('DELETE', `/api/users/${encodeURIComponent(name)}`);
+    S.users = S.users.filter(u => u !== name);
+    renderUserMgmt();
+  } catch(e) {
+    alert(e.message || 'Could not remove user.');
+  }
 }
 
 async function saveSettings() {
@@ -2476,7 +2561,8 @@ function handleMentionInput(textarea) {
   const match = before.match(/@(\w*)$/);
   if (match) {
     const q = match[1].toLowerCase();
-    const opts = ['Marcus','Lucas'].filter(n => n !== S.user && n.toLowerCase().startsWith(q));
+    const opts = (S.users.length ? S.users : ['Marcus','Lucas'])
+      .filter(n => n !== S.user && n.toLowerCase().startsWith(q));
     if (opts.length) { showMentionDropdown(opts, textarea); return; }
   }
   hideMentionDropdown();
@@ -2484,11 +2570,15 @@ function handleMentionInput(textarea) {
 
 function showMentionDropdown(opts, textarea) {
   const dd = document.getElementById('mentionDropdown');
-  dd.innerHTML = opts.map(n =>
-    `<div class="mention-opt" onclick="insertMention('${n}',document.getElementById('scratchInput'))">
-      <span class="mention ${n.toLowerCase()}" style="font-size:0.9rem">@${n}</span>
-    </div>`
-  ).join('');
+  const colors = ['marcus','lucas','accent3','accent4','accent5'];
+  const allUsers = S.users.length ? S.users : ['Marcus','Lucas'];
+  dd.innerHTML = opts.map(n => {
+    const idx = allUsers.indexOf(n);
+    const cls = colors[idx >= 0 ? idx % colors.length : 0];
+    return `<div class="mention-opt" onclick="insertMention('${escHtml(n)}',document.getElementById('scratchInput'))">
+      <span class="mention ${cls}" style="font-size:0.9rem">@${escHtml(n)}</span>
+    </div>`;
+  }).join('');
   dd.style.display = 'block';
 }
 
@@ -2510,15 +2600,39 @@ function insertMention(name, textarea) {
 }
 
 function renderMentions(html) {
-  return html
-    .replace(/@Marcus/gi, '<span class="mention marcus">@Marcus</span>')
-    .replace(/@Lucas/gi,  '<span class="mention lucas">@Lucas</span>');
+  const users = S.users.length ? S.users : ['Marcus', 'Lucas'];
+  const colors = ['marcus','lucas','accent3','accent4','accent5'];
+  users.forEach((name, i) => {
+    const cls = colors[i % colors.length];
+    const re = new RegExp('@' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    html = html.replace(re, `<span class="mention ${cls}">@${escHtml(name)}</span>`);
+  });
+  return html;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // PHOTO ATTACHMENTS
 // ═══════════════════════════════════════════════════════════════
-let pendingPhotos = []; // { filename, b64, preview }
+let pendingPhotos = []; // { filename, b64, preview } OR { url, preview }
+
+function addPendingImageUrl() {
+  const url = prompt('Paste an image URL:');
+  if (!url || !url.trim()) return;
+  const u = url.trim();
+  pendingPhotos.push({ url: u, preview: u, filename: u });
+  renderPendingPhotos();
+}
+
+async function addModalImageUrl(entityType, getIdFn, gridId) {
+  const url = prompt('Paste an image URL:');
+  if (!url || !url.trim()) return;
+  const entityId = getIdFn();
+  if (!entityId) { alert('Save the item first before adding images.'); return; }
+  try {
+    await api('POST', '/api/attachments', { entity_type: entityType, entity_id: entityId, url: url.trim(), filename: url.trim(), uploaded_by: S.user });
+    await loadModalPhotos(entityType, entityId, gridId);
+  } catch(e) { alert('Could not add image URL.'); }
+}
 
 function addPendingPhotos(input) {
   const files = Array.from(input.files);
@@ -2552,7 +2666,11 @@ function removePendingPhoto(i) {
 async function uploadPendingPhotos(entityType, entityId) {
   for (const p of pendingPhotos) {
     try {
-      await api('POST', '/api/attachments', { entity_type: entityType, entity_id: entityId, filename: p.filename, data: p.b64, uploaded_by: S.user });
+      if (p.url) {
+        await api('POST', '/api/attachments', { entity_type: entityType, entity_id: entityId, url: p.url, filename: p.url, uploaded_by: S.user });
+      } else {
+        await api('POST', '/api/attachments', { entity_type: entityType, entity_id: entityId, filename: p.filename, data: p.b64, uploaded_by: S.user });
+      }
     } catch(e) {}
   }
   pendingPhotos = [];
@@ -2595,14 +2713,18 @@ function renderAddPhotoBtn(entityType) {
   return `<button class="photo-add-btn" onclick="document.getElementById('${inputId}').click()" title="Add photo">＋</button>`;
 }
 
+function attSrc(a) { return a.url || '/uploads/' + a.filename; }
+
 function renderModalPhotoGrid(attachments, gridId, entityType) {
   const el = document.getElementById(gridId);
   if (!el) return;
-  const thumbs = attachments.map(a => `
-    <div class="photo-thumb">
-      <img src="/uploads/${a.filename}" alt="${escHtml(a.original_name)}" onclick="openLightbox('/uploads/${a.filename}','${escHtml(a.original_name)}')">
+  const thumbs = attachments.map(a => {
+    const src = attSrc(a);
+    return `<div class="photo-thumb">
+      <img src="${escHtml(src)}" alt="${escHtml(a.original_name)}" onclick="openLightbox('${escHtml(src)}','${escHtml(a.original_name)}')">
       <button class="photo-thumb-del" onclick="deleteAttachment('${a.id}','${gridId}','${entityType}')">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   el.innerHTML = thumbs + renderAddPhotoBtn(entityType);
 }
 
@@ -2770,9 +2892,10 @@ renderScratch = function() {
   }
   feed.innerHTML = S.scratch.map(e => {
     const authorCls = e.author.toLowerCase();
-    const photoHtml = (e.attachments || []).map(a =>
-      `<img class="scratch-photo-thumb" src="/uploads/${a.filename}" alt="${escHtml(a.original_name)}" onclick="openLightbox('/uploads/${a.filename}','${escHtml(a.original_name)}')">`
-    ).join('');
+    const photoHtml = (e.attachments || []).map(a => {
+      const src = attSrc(a);
+      return `<img class="scratch-photo-thumb" src="${escHtml(src)}" alt="${escHtml(a.original_name)}" onclick="openLightbox('${escHtml(src)}','${escHtml(a.original_name)}')">`;
+    }).join('');
     const refsHtml = (e.refs || []).map(r =>
       `<span class="ref-chip ${r.entity_type}" onclick="refChipOnclick('${r.entity_type}','${r.entity_id}')">${typeIcon(r.entity_type)} ${escHtml(r.label.length > 32 ? r.label.slice(0,32)+'…' : r.label)}</span>`
     ).join('');

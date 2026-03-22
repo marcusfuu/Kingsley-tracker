@@ -128,7 +128,21 @@ db.exec(`
     uploaded_by TEXT DEFAULT '',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    name TEXT PRIMARY KEY,
+    protected INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
 `);
+
+// Add url column to attachments (safe to run on existing DBs — fails silently if already exists)
+try { db.exec('ALTER TABLE attachments ADD COLUMN url TEXT DEFAULT NULL'); } catch(e) {}
+
+// Seed default users (Marcus is protected — cannot be deleted)
+const insertUser = db.prepare('INSERT OR IGNORE INTO users (name, protected) VALUES (?, ?)');
+insertUser.run('Marcus', 1);
+insertUser.run('Lucas', 0);
 
 // Seed default settings
 const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

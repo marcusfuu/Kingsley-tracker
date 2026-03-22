@@ -201,13 +201,15 @@ app.post('/api/scratchpad', auth, (req, res) => {
   if (!author || !text) return res.status(400).json({ error: 'author and text required' });
   const id = uid();
   db.prepare("INSERT INTO scratchpad (id,author,text,timestamp) VALUES (?,?,?,datetime('now','localtime'))").run(id, author, text);
-  // Detect @mention and notify the other user
-  const other = author.toLowerCase() === 'marcus' ? 'Lucas' : 'Marcus';
-  if (new RegExp('@' + other, 'i').test(text)) {
-    db.prepare(`INSERT INTO notifications (id,recipient,sender,type,ref_id,excerpt,created_at)
-      VALUES (?,?,?,'mention',?,?,datetime('now','localtime'))`)
-      .run(uid(), other, author, id, text.slice(0, 120));
-  }
+  // Detect @mentions and notify every mentioned user (dynamic)
+  const allUsers = db.prepare('SELECT name FROM users').all().map(u => u.name);
+  allUsers.filter(u => u.toLowerCase() !== author.toLowerCase()).forEach(other => {
+    if (new RegExp('@' + other.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(text)) {
+      db.prepare(`INSERT INTO notifications (id,recipient,sender,type,ref_id,excerpt,created_at)
+        VALUES (?,?,?,'mention',?,?,datetime('now','localtime'))`)
+        .run(uid(), other, author, id, text.slice(0, 120));
+    }
+  });
   // Store item references
   if (Array.isArray(refs)) {
     const ins = db.prepare('INSERT INTO scratchpad_refs (id,scratch_id,entity_type,entity_id,label) VALUES (?,?,?,?,?)');
@@ -255,21 +257,58 @@ app.get('/api/attachments/:type/:id', auth, (req, res) => {
 });
 
 app.post('/api/attachments', auth, (req, res) => {
-  const { entity_type, entity_id, filename, data, uploaded_by } = req.body;
-  if (!entity_type || !entity_id || !filename || !data) return res.status(400).json({ error: 'Missing fields' });
-  const safe = Date.now() + '-' + filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-  fs.writeFileSync(path.join(uploadsDir, safe), Buffer.from(data, 'base64'));
+  const { entity_type, entity_id, filename, data, url, uploaded_by } = req.body;
+  if (!entity_type || !entity_id) return res.status(400).json({ error: 'Missing fields' });
+  let safe = null;
+  let origName = filename || url || '';
+  if (url) {
+    // Remote URL — store reference only, no file write
+    safe = '';
+  } else if (data && filename) {
+    safe = Date.now() + '-' + filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    fs.writeFileSync(path.join(uploadsDir, safe), Buffer.from(data, 'base64'));
+  } else {
+    return res.status(400).json({ error: 'Provide either data+filename or url' });
+  }
   const id = uid();
-  db.prepare('INSERT INTO attachments (id,entity_type,entity_id,filename,original_name,uploaded_by) VALUES (?,?,?,?,?,?)').run(id, entity_type, entity_id, safe, filename, uploaded_by || '');
+  db.prepare('INSERT INTO attachments (id,entity_type,entity_id,filename,original_name,uploaded_by,url) VALUES (?,?,?,?,?,?,?)')
+    .run(id, entity_type, entity_id, safe, origName, uploaded_by || '', url || null);
   res.json({ attachment: db.prepare('SELECT * FROM attachments WHERE id=?').get(id) });
 });
 
 app.delete('/api/attachments/:id', auth, (req, res) => {
   const att = db.prepare('SELECT * FROM attachments WHERE id=?').get(req.params.id);
   if (att) {
-    try { fs.unlinkSync(path.join(uploadsDir, att.filename)); } catch(e) {}
+    // Only try to delete local file (not URL-only attachments)
+    if (att.filename && !att.url) {
+      try { fs.unlinkSync(path.join(uploadsDir, att.filename)); } catch(e) {}
+    }
     db.prepare('DELETE FROM attachments WHERE id=?').run(att.id);
   }
+  res.json({ ok: true });
+});
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+app.get('/api/users', auth, (req, res) => {
+  res.json({ users: db.prepare('SELECT name, protected FROM users ORDER BY name ASC').all() });
+});
+
+app.post('/api/users', auth, (req, res) => {
+  const name = (req.body.name || '').trim();
+  if (name.length < 2) return res.status(400).json({ error: 'Name must be at least 2 characters' });
+  try {
+    db.prepare("INSERT INTO users (name, protected, created_at) VALUES (?, 0, datetime('now','localtime'))").run(name);
+    res.json({ ok: true, user: { name, protected: 0 } });
+  } catch(e) {
+    res.status(409).json({ error: 'User already exists' });
+  }
+});
+
+app.delete('/api/users/:name', auth, (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE name=?').get(req.params.name);
+  if (!user) return res.status(404).json({ error: 'Not found' });
+  if (user.protected) return res.status(403).json({ error: 'Cannot delete a protected user' });
+  db.prepare('DELETE FROM users WHERE name=?').run(req.params.name);
   res.json({ ok: true });
 });
 

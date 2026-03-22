@@ -187,20 +187,95 @@ app.delete('/api/shortlist/:id', auth, (req, res) => {
 // ─── Scratchpad ───────────────────────────────────────────────────────────────
 app.get('/api/scratchpad', auth, (req, res) => {
   const entries = db.prepare('SELECT * FROM scratchpad ORDER BY timestamp DESC LIMIT 200').all();
+  const allRefs = db.prepare('SELECT * FROM scratchpad_refs').all();
+  const allAtts = db.prepare("SELECT * FROM attachments WHERE entity_type='scratchpad'").all();
+  const refMap  = {}, attMap = {};
+  allRefs.forEach(r => { (refMap[r.scratch_id]  = refMap[r.scratch_id]  || []).push(r); });
+  allAtts.forEach(a => { (attMap[a.entity_id]   = attMap[a.entity_id]   || []).push(a); });
+  entries.forEach(e => { e.refs = refMap[e.id] || []; e.attachments = attMap[e.id] || []; });
   res.json({ entries });
 });
 
 app.post('/api/scratchpad', auth, (req, res) => {
-  const { author, text } = req.body;
+  const { author, text, refs } = req.body;
   if (!author || !text) return res.status(400).json({ error: 'author and text required' });
   const id = uid();
   db.prepare("INSERT INTO scratchpad (id,author,text,timestamp) VALUES (?,?,?,datetime('now','localtime'))").run(id, author, text);
-  res.json({ entry: db.prepare('SELECT * FROM scratchpad WHERE id=?').get(id) });
+  // Detect @mention and notify the other user
+  const other = author.toLowerCase() === 'marcus' ? 'Lucas' : 'Marcus';
+  if (new RegExp('@' + other, 'i').test(text)) {
+    db.prepare(`INSERT INTO notifications (id,recipient,sender,type,ref_id,excerpt,created_at)
+      VALUES (?,?,?,'mention',?,?,datetime('now','localtime'))`)
+      .run(uid(), other, author, id, text.slice(0, 120));
+  }
+  // Store item references
+  if (Array.isArray(refs)) {
+    const ins = db.prepare('INSERT INTO scratchpad_refs (id,scratch_id,entity_type,entity_id,label) VALUES (?,?,?,?,?)');
+    refs.forEach(r => ins.run(uid(), id, r.entity_type, r.entity_id, r.label || ''));
+  }
+  const entry = db.prepare('SELECT * FROM scratchpad WHERE id=?').get(id);
+  entry.refs = db.prepare('SELECT * FROM scratchpad_refs WHERE scratch_id=?').all(id);
+  entry.attachments = [];
+  res.json({ entry });
 });
 
 app.delete('/api/scratchpad/:id', auth, (req, res) => {
+  // Cascade: delete refs, delete attachment files
+  const atts = db.prepare("SELECT * FROM attachments WHERE entity_type='scratchpad' AND entity_id=?").all(req.params.id);
+  atts.forEach(a => { try { fs.unlinkSync(path.join(uploadsDir, a.filename)); } catch(e){} });
+  db.prepare("DELETE FROM attachments WHERE entity_type='scratchpad' AND entity_id=?").run(req.params.id);
+  db.prepare('DELETE FROM scratchpad_refs WHERE scratch_id=?').run(req.params.id);
   db.prepare('DELETE FROM scratchpad WHERE id=?').run(req.params.id);
   res.json({ ok: true });
+});
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+app.get('/api/notifications', auth, (req, res) => {
+  const { user } = req.query;
+  if (!user) return res.status(400).json({ error: 'user required' });
+  const notifications = db.prepare('SELECT * FROM notifications WHERE recipient=? ORDER BY created_at DESC LIMIT 50').all(user);
+  res.json({ notifications });
+});
+
+app.put('/api/notifications/read-all', auth, (req, res) => {
+  const { user } = req.body;
+  db.prepare('UPDATE notifications SET is_read=1 WHERE recipient=?').run(user || '');
+  res.json({ ok: true });
+});
+
+app.put('/api/notifications/:id/read', auth, (req, res) => {
+  db.prepare('UPDATE notifications SET is_read=1 WHERE id=?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// ─── Attachments ──────────────────────────────────────────────────────────────
+app.get('/api/attachments/:type/:id', auth, (req, res) => {
+  const attachments = db.prepare('SELECT * FROM attachments WHERE entity_type=? AND entity_id=? ORDER BY created_at ASC').all(req.params.type, req.params.id);
+  res.json({ attachments });
+});
+
+app.post('/api/attachments', auth, (req, res) => {
+  const { entity_type, entity_id, filename, data, uploaded_by } = req.body;
+  if (!entity_type || !entity_id || !filename || !data) return res.status(400).json({ error: 'Missing fields' });
+  const safe = Date.now() + '-' + filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  fs.writeFileSync(path.join(uploadsDir, safe), Buffer.from(data, 'base64'));
+  const id = uid();
+  db.prepare('INSERT INTO attachments (id,entity_type,entity_id,filename,original_name,uploaded_by) VALUES (?,?,?,?,?,?)').run(id, entity_type, entity_id, safe, filename, uploaded_by || '');
+  res.json({ attachment: db.prepare('SELECT * FROM attachments WHERE id=?').get(id) });
+});
+
+app.delete('/api/attachments/:id', auth, (req, res) => {
+  const att = db.prepare('SELECT * FROM attachments WHERE id=?').get(req.params.id);
+  if (att) {
+    try { fs.unlinkSync(path.join(uploadsDir, att.filename)); } catch(e) {}
+    db.prepare('DELETE FROM attachments WHERE id=?').run(att.id);
+  }
+  res.json({ ok: true });
+});
+
+// ─── Scratchpad refs ──────────────────────────────────────────────────────────
+app.get('/api/scratchpad-refs/:scratchId', auth, (req, res) => {
+  res.json({ refs: db.prepare('SELECT * FROM scratchpad_refs WHERE scratch_id=?').all(req.params.scratchId) });
 });
 
 // ─── Activity Log ─────────────────────────────────────────────────────────────

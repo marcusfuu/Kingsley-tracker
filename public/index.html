@@ -293,6 +293,74 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   color: #0f172a; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;
 }
 
+/* ── Notification bell ── */
+.notif-wrap { margin-left: auto; position: relative; display: flex; align-items: center; gap: 10px; }
+.notif-bell { background: none; border: none; cursor: pointer; font-size: 1.2rem; position: relative; padding: 4px 6px; border-radius: 6px; color: var(--text); }
+.notif-bell:hover { background: rgba(255,255,255,0.07); }
+.notif-badge { position: absolute; top: 0; right: 0; background: var(--red); color: #fff; font-size: 0.65rem; font-weight: 700; border-radius: 99px; padding: 1px 5px; min-width: 16px; text-align: center; }
+.notif-panel { position: absolute; top: calc(100% + 10px); right: 0; width: 320px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); z-index: 1000; overflow: hidden; display: none; }
+.notif-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.82rem; font-weight: 700; }
+.notif-panel-header button { background: none; border: none; color: var(--accent); font-size: 0.75rem; cursor: pointer; }
+.notif-list { max-height: 360px; overflow-y: auto; }
+.notif-item { padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.notif-item:hover { background: rgba(255,255,255,0.04); }
+.notif-item.unread { background: rgba(56,189,248,0.06); }
+.notif-item-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 0.72rem; color: var(--muted); }
+.notif-item-sender { font-weight: 700; color: var(--text); }
+.notif-item-text { font-size: 0.82rem; color: var(--text); line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notif-empty { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 0.82rem; }
+/* ── Toast ── */
+.notif-toast { position: fixed; top: 20px; right: 20px; z-index: 2000; background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 14px 18px; max-width: 340px; box-shadow: 0 6px 24px rgba(0,0,0,0.4); display: flex; align-items: flex-start; gap: 10px; animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.notif-toast-body { flex: 1; }
+.notif-toast-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 3px; }
+.notif-toast-text { font-size: 0.78rem; color: var(--muted); }
+.notif-toast-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; flex-shrink: 0; }
+/* ── @mention ── */
+.mention { font-weight: 700; border-radius: 4px; padding: 0 3px; }
+.mention.marcus { color: var(--marcus); background: rgba(46,117,182,0.15); }
+.mention.lucas  { color: var(--lucas);  background: rgba(124,58,237,0.15); }
+.mention-dropdown { position: absolute; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); z-index: 500; overflow: hidden; bottom: calc(100% + 4px); left: 0; }
+.mention-opt { padding: 9px 14px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+.mention-opt:hover { background: rgba(255,255,255,0.06); }
+/* ── Photo attachments ── */
+.photo-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.photo-thumb { position: relative; width: 80px; height: 80px; border-radius: 6px; overflow: hidden; background: var(--bg); border: 1px solid var(--border); }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+.photo-thumb-del { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); border: none; color: #fff; border-radius: 4px; padding: 1px 5px; cursor: pointer; font-size: 0.65rem; }
+.photo-add-btn { width: 80px; height: 80px; border-radius: 6px; border: 1px dashed var(--border); background: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.photo-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+.modal-photos { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.modal-photos-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.pending-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pending-photo { position: relative; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; }
+.pending-photo img { width: 100%; height: 100%; object-fit: cover; }
+.pending-photo-del { position: absolute; top: 1px; right: 1px; background: rgba(0,0,0,0.75); border: none; color: #fff; border-radius: 3px; padding: 0 4px; cursor: pointer; font-size: 0.6rem; }
+/* ── Scratchpad photos ── */
+.scratch-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.scratch-photo-thumb { width: 72px; height: 72px; border-radius: 6px; object-fit: cover; cursor: zoom-in; border: 1px solid var(--border); }
+/* ── Item ref chips ── */
+.ref-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; }
+.ref-chip.inventory { background: rgba(34,197,94,0.15);  color: var(--green);  border-color: rgba(34,197,94,0.3); }
+.ref-chip.reno      { background: rgba(234,179,8,0.15);  color: var(--yellow); border-color: rgba(234,179,8,0.3); }
+.ref-chip.shortlist { background: rgba(56,189,248,0.15); color: var(--accent); border-color: rgba(56,189,248,0.3); }
+.refs-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.ref-picker-panel { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 8px; display: none; }
+.ref-picker-search { width: 100%; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.82rem; margin-bottom: 8px; }
+.ref-picker-search:focus { outline: none; border-color: var(--accent); }
+.ref-picker-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.ref-tab { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 0.75rem; cursor: pointer; }
+.ref-tab.active { background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 700; }
+.ref-picker-list { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.ref-picker-row { padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.ref-picker-row:hover { background: rgba(255,255,255,0.05); }
+.ref-picker-row span { color: var(--muted); font-size: 0.72rem; }
+.compose-toolbar { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.compose-icon-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; }
+.compose-icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
+.lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+
 /* ── Shortlist priority badges ── */
 .badge-high { background: rgba(239,68,68,0.18);  color: var(--red); }
 .badge-med  { background: rgba(234,179,8,0.18);  color: var(--yellow); }
@@ -495,8 +563,27 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   <header>
     <h1>🏠 Kingsley Hills SL-05b</h1>
     <div id="userPill" class="user-pill"></div>
+    <div class="notif-wrap" id="notifWrap">
+      <button class="notif-bell" onclick="toggleNotifPanel(event)" title="Notifications">
+        🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="notif-panel" id="notifPanel">
+        <div class="notif-panel-header">
+          <span>Notifications</span>
+          <button onclick="markAllNotifsRead()">Mark all read</button>
+        </div>
+        <div class="notif-list" id="notifList"></div>
+      </div>
+    </div>
     <button class="btn-logout" onclick="logout()">Sign Out</button>
   </header>
+  <div class="notif-toast" id="notifToast" style="display:none">
+    <div class="notif-toast-body">
+      <div class="notif-toast-title" id="notifToastTitle">New mention</div>
+      <div class="notif-toast-text" id="notifToastText"></div>
+    </div>
+    <button class="notif-toast-close" onclick="dismissToast()">✕</button>
+  </div>
   <nav>
     <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
     <button class="nav-btn" onclick="showPage('design')">Home Design</button>
@@ -721,9 +808,28 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   <div class="page" id="page-scratchpad">
     <div class="section-header"><h2>Scratchpad</h2></div>
     <div class="scratch-feed" id="scratchFeed"></div>
-    <div class="compose-box">
-      <textarea id="scratchInput" placeholder="Write a note… (Ctrl+Enter to post)" onkeydown="if(event.ctrlKey&&event.key==='Enter')postScratch()"></textarea>
-      <button onclick="postScratch()">Post Note</button>
+    <div class="compose-box" style="position:relative">
+      <div class="mention-dropdown" id="mentionDropdown" style="display:none"></div>
+      <textarea id="scratchInput" placeholder="Write a note… type @Marcus or @Lucas to mention  (Ctrl+Enter to post)"
+        onkeydown="if(event.ctrlKey&&event.key==='Enter')postScratch()"
+        oninput="handleMentionInput(this)"></textarea>
+      <div class="pending-photos" id="pendingPhotos"></div>
+      <div class="refs-row" id="pendingRefs"></div>
+      <div class="compose-toolbar">
+        <button class="compose-icon-btn" onclick="document.getElementById('scratchPhotoInput').click()">📎 Photo</button>
+        <input type="file" id="scratchPhotoInput" accept="image/*" multiple style="display:none" onchange="addPendingPhotos(this)">
+        <button class="compose-icon-btn" onclick="toggleRefPicker()">🔗 Link Item</button>
+        <button onclick="postScratch()" style="margin-left:auto;padding:8px 20px;background:var(--accent);color:#0f172a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Post Note</button>
+      </div>
+      <div class="ref-picker-panel" id="refPickerPanel">
+        <input class="ref-picker-search" id="refPickerSearch" placeholder="Search items…" oninput="renderRefPickerList()">
+        <div class="ref-picker-tabs" id="refPickerTabs">
+          <button class="ref-tab active" data-type="inventory" onclick="setRefTab('inventory')">Inventory</button>
+          <button class="ref-tab" data-type="reno" onclick="setRefTab('reno')">Renovation</button>
+          <button class="ref-tab" data-type="shortlist" onclick="setRefTab('shortlist')">Shortlist</button>
+        </div>
+        <div class="ref-picker-list" id="refPickerList"></div>
+      </div>
       <div id="scratchError" style="display:none;color:var(--red);font-size:0.82rem;margin-top:8px"></div>
     </div>
   </div>
@@ -807,6 +913,12 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
         <option>To Procure</option><option>Ordered</option><option>Delivered</option>
       </select></div>
     <div class="form-row"><label>Notes</label><textarea id="im_notes"></textarea></div>
+    <!-- Photos -->
+    <div class="modal-photos">
+      <div class="modal-photos-label">Photos</div>
+      <div class="photo-grid" id="im_photoGrid"></div>
+      <input type="file" id="im_photoInput" accept="image/*" multiple style="display:none" onchange="handleModalPhotoUpload(this,'inventory',()=>currentInvId)">
+    </div>
     <!-- Activity log -->
     <div class="act-section" id="im_actSection" style="display:none">
       <h4>Activity &amp; Notes</h4>
@@ -841,6 +953,12 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <div class="form-row"><label>Start Date</label><input type="date" id="rm_start"></div>
     <div class="form-row"><label>End Date</label><input type="date" id="rm_end"></div>
     <div class="form-row"><label>Notes</label><textarea id="rm_notes"></textarea></div>
+    <!-- Photos -->
+    <div class="modal-photos">
+      <div class="modal-photos-label">Photos</div>
+      <div class="photo-grid" id="rm_photoGrid"></div>
+      <input type="file" id="rm_photoInput" accept="image/*" multiple style="display:none" onchange="handleModalPhotoUpload(this,'reno',()=>currentRenoId)">
+    </div>
     <!-- Activity log -->
     <div class="act-section" id="rm_actSection" style="display:none">
       <h4>Activity &amp; Notes</h4>
@@ -880,6 +998,12 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
         </select></div>
     </div>
     <div class="form-row"><label>Notes</label><textarea id="sl_notes" placeholder="Dimensions, colour options, alternatives considered…"></textarea></div>
+    <!-- Photos -->
+    <div class="modal-photos">
+      <div class="modal-photos-label">Photos</div>
+      <div class="photo-grid" id="sl_photoGrid"></div>
+      <input type="file" id="sl_photoInput" accept="image/*" multiple style="display:none" onchange="handleModalPhotoUpload(this,'shortlist',()=>currentShortlistId)">
+    </div>
     <div class="modal-actions">
       <button class="btn-del" id="slDelBtn" onclick="deleteShortlistItem()" style="display:none">Delete</button>
       <button class="btn-cancel" onclick="closeModal('shortlistModal')">Cancel</button>
@@ -895,6 +1019,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 const S = {
   pin: '', user: '',
   tasks: [], inventory: [], reno: [], scratch: [], shortlist: [], design: [],
+  notifications: [],
   settings: {}, actCounts: {},
   actFeeds: { task: [], inventory: [], reno: [] }
 };
@@ -2131,6 +2256,421 @@ function showExportHelp() {
 function hideExportHelp() {
   const el = document.getElementById('exportHelp');
   if (el) el.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════
+async function loadNotifications() {
+  try {
+    const r = await api('GET', `/api/notifications?user=${encodeURIComponent(S.user)}`);
+    S.notifications = r.notifications;
+    renderNotifBell();
+    showToastIfNeeded();
+  } catch(e) {}
+}
+
+function renderNotifBell() {
+  const unread = (S.notifications || []).filter(n => !n.is_read).length;
+  const badge = document.getElementById('notifBadge');
+  if (badge) { badge.textContent = unread; badge.style.display = unread ? 'block' : 'none'; }
+}
+
+function renderNotifPanel() {
+  const list = document.getElementById('notifList');
+  if (!list) return;
+  const notifs = S.notifications || [];
+  if (!notifs.length) { list.innerHTML = '<div class="notif-empty">No notifications yet.</div>'; return; }
+  list.innerHTML = notifs.map(n => `
+    <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="openNotif('${n.id}','${n.ref_id}')">
+      <div class="notif-item-meta">
+        <span class="notif-item-sender">${escHtml(n.sender)}</span>
+        <span>mentioned you</span>
+        <span style="margin-left:auto">${n.created_at}</span>
+      </div>
+      <div class="notif-item-text">${renderMentions(escHtml(n.excerpt))}</div>
+    </div>`).join('');
+}
+
+function toggleNotifPanel(e) {
+  if (e) e.stopPropagation();
+  const panel = document.getElementById('notifPanel');
+  const isOpen = panel.style.display === 'block';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) renderNotifPanel();
+}
+
+async function openNotif(id, refId) {
+  document.getElementById('notifPanel').style.display = 'none';
+  // Mark read
+  try { await api('PUT', `/api/notifications/${id}/read`); } catch(e) {}
+  const n = S.notifications.find(x => x.id === id);
+  if (n) n.is_read = 1;
+  renderNotifBell();
+  // Navigate to scratchpad
+  showPage('scratchpad');
+}
+
+async function markAllNotifsRead() {
+  try { await api('PUT', '/api/notifications/read-all', { user: S.user }); } catch(e) {}
+  (S.notifications || []).forEach(n => n.is_read = 1);
+  renderNotifBell();
+  renderNotifPanel();
+}
+
+let _toastShown = false;
+function showToastIfNeeded() {
+  if (_toastShown) return;
+  const unread = (S.notifications || []).filter(n => !n.is_read);
+  if (!unread.length) return;
+  _toastShown = true;
+  const latest = unread[0];
+  document.getElementById('notifToastTitle').textContent = `${latest.sender} mentioned you`;
+  document.getElementById('notifToastText').textContent = latest.excerpt.length > 80 ? latest.excerpt.slice(0,80) + '…' : latest.excerpt;
+  const toast = document.getElementById('notifToast');
+  toast.style.display = 'flex';
+  setTimeout(() => { toast.style.display = 'none'; }, 6000);
+}
+
+function dismissToast() {
+  document.getElementById('notifToast').style.display = 'none';
+}
+
+// Close notif panel on outside click
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('notifWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    const panel = document.getElementById('notifPanel');
+    if (panel) panel.style.display = 'none';
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// @MENTION AUTOCOMPLETE
+// ═══════════════════════════════════════════════════════════════
+function handleMentionInput(textarea) {
+  const val = textarea.value;
+  const cursor = textarea.selectionStart;
+  const before = val.slice(0, cursor);
+  const match = before.match(/@(\w*)$/);
+  if (match) {
+    const q = match[1].toLowerCase();
+    const opts = ['Marcus','Lucas'].filter(n => n !== S.user && n.toLowerCase().startsWith(q));
+    if (opts.length) { showMentionDropdown(opts, textarea); return; }
+  }
+  hideMentionDropdown();
+}
+
+function showMentionDropdown(opts, textarea) {
+  const dd = document.getElementById('mentionDropdown');
+  dd.innerHTML = opts.map(n =>
+    `<div class="mention-opt" onclick="insertMention('${n}',document.getElementById('scratchInput'))">
+      <span class="mention ${n.toLowerCase()}" style="font-size:0.9rem">@${n}</span>
+    </div>`
+  ).join('');
+  dd.style.display = 'block';
+}
+
+function hideMentionDropdown() {
+  const dd = document.getElementById('mentionDropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function insertMention(name, textarea) {
+  const val = textarea.value;
+  const cursor = textarea.selectionStart;
+  const before = val.slice(0, cursor);
+  const after  = val.slice(cursor);
+  const replaced = before.replace(/@\w*$/, '@' + name + ' ');
+  textarea.value = replaced + after;
+  textarea.focus();
+  textarea.selectionStart = textarea.selectionEnd = replaced.length;
+  hideMentionDropdown();
+}
+
+function renderMentions(html) {
+  return html
+    .replace(/@Marcus/gi, '<span class="mention marcus">@Marcus</span>')
+    .replace(/@Lucas/gi,  '<span class="mention lucas">@Lucas</span>');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PHOTO ATTACHMENTS
+// ═══════════════════════════════════════════════════════════════
+let pendingPhotos = []; // { filename, b64, preview }
+
+function addPendingPhotos(input) {
+  const files = Array.from(input.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const b64 = e.target.result.split(',')[1];
+      pendingPhotos.push({ filename: file.name, b64, preview: e.target.result });
+      renderPendingPhotos();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderPendingPhotos() {
+  const el = document.getElementById('pendingPhotos');
+  if (!el) return;
+  el.innerHTML = pendingPhotos.map((p, i) => `
+    <div class="pending-photo">
+      <img src="${p.preview}" alt="">
+      <button class="pending-photo-del" onclick="removePendingPhoto(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removePendingPhoto(i) {
+  pendingPhotos.splice(i, 1);
+  renderPendingPhotos();
+}
+
+async function uploadPendingPhotos(entityType, entityId) {
+  for (const p of pendingPhotos) {
+    try {
+      await api('POST', '/api/attachments', { entity_type: entityType, entity_id: entityId, filename: p.filename, data: p.b64, uploaded_by: S.user });
+    } catch(e) {}
+  }
+  pendingPhotos = [];
+  renderPendingPhotos();
+}
+
+async function handleModalPhotoUpload(input, entityType, getIdFn) {
+  const entityId = getIdFn();
+  if (!entityId) return;
+  const files = Array.from(input.files);
+  for (const file of files) {
+    await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async e => {
+        const b64 = e.target.result.split(',')[1];
+        await api('POST', '/api/attachments', { entity_type: entityType, entity_id: entityId, filename: file.name, data: b64, uploaded_by: S.user });
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  input.value = '';
+  await loadModalPhotos(entityType, entityId, entityType === 'inventory' ? 'im_photoGrid' : entityType === 'reno' ? 'rm_photoGrid' : 'sl_photoGrid');
+}
+
+async function loadModalPhotos(entityType, entityId, gridId) {
+  if (!entityId) {
+    const el = document.getElementById(gridId);
+    if (el) el.innerHTML = renderAddPhotoBtn(entityType);
+    return;
+  }
+  try {
+    const r = await api('GET', `/api/attachments/${entityType}/${entityId}`);
+    renderModalPhotoGrid(r.attachments, gridId, entityType);
+  } catch(e) {}
+}
+
+function renderAddPhotoBtn(entityType) {
+  const inputId = entityType === 'inventory' ? 'im_photoInput' : entityType === 'reno' ? 'rm_photoInput' : 'sl_photoInput';
+  return `<button class="photo-add-btn" onclick="document.getElementById('${inputId}').click()" title="Add photo">＋</button>`;
+}
+
+function renderModalPhotoGrid(attachments, gridId, entityType) {
+  const el = document.getElementById(gridId);
+  if (!el) return;
+  const thumbs = attachments.map(a => `
+    <div class="photo-thumb">
+      <img src="/uploads/${a.filename}" alt="${escHtml(a.original_name)}" onclick="openLightbox('/uploads/${a.filename}','${escHtml(a.original_name)}')">
+      <button class="photo-thumb-del" onclick="deleteAttachment('${a.id}','${gridId}','${entityType}')">✕</button>
+    </div>`).join('');
+  el.innerHTML = thumbs + renderAddPhotoBtn(entityType);
+}
+
+async function deleteAttachment(id, gridId, entityType) {
+  if (!confirm('Delete this photo?')) return;
+  await api('DELETE', `/api/attachments/${id}`);
+  const entityId = entityType === 'inventory' ? currentInvId : entityType === 'reno' ? currentRenoId : currentShortlistId;
+  await loadModalPhotos(entityType, entityId, gridId);
+}
+
+function openLightbox(src, label) {
+  const lb = document.createElement('div');
+  lb.className = 'lightbox';
+  lb.innerHTML = `<img src="${src}" alt="${escHtml(label)}">`;
+  lb.onclick = () => lb.remove();
+  document.body.appendChild(lb);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ITEM REFERENCE PICKER
+// ═══════════════════════════════════════════════════════════════
+let pendingRefs  = []; // { entity_type, entity_id, label }
+let refPickerTab = 'inventory';
+
+function toggleRefPicker() {
+  const panel = document.getElementById('refPickerPanel');
+  const isOpen = panel.style.display === 'block';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) { document.getElementById('refPickerSearch').value = ''; renderRefPickerList(); }
+}
+
+function setRefTab(type) {
+  refPickerTab = type;
+  document.querySelectorAll('.ref-tab').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  document.getElementById('refPickerSearch').value = '';
+  renderRefPickerList();
+}
+
+function renderRefPickerList() {
+  const q = (document.getElementById('refPickerSearch').value || '').toLowerCase();
+  const list = document.getElementById('refPickerList');
+  let items = [];
+  if (refPickerTab === 'inventory') items = S.inventory.map(i => ({ et: 'inventory', eid: i.id, label: i.name, sub: i.category }));
+  if (refPickerTab === 'reno')      items = S.reno.map(w => ({ et: 'reno', eid: w.id, label: w.description, sub: w.area }));
+  if (refPickerTab === 'shortlist') items = S.shortlist.map(x => ({ et: 'shortlist', eid: x.id, label: x.name, sub: x.category }));
+  if (q) items = items.filter(i => i.label.toLowerCase().includes(q) || i.sub.toLowerCase().includes(q));
+  if (!items.length) { list.innerHTML = '<div style="padding:10px;color:var(--muted);font-size:0.8rem">No items found.</div>'; return; }
+  const alreadyAdded = new Set(pendingRefs.map(r => r.entity_id));
+  list.innerHTML = items.map(i => {
+    const added = alreadyAdded.has(i.eid);
+    return `<div class="ref-picker-row" onclick="${added ? '' : `addRef('${i.et}','${i.eid}',${JSON.stringify(i.label)})`}" style="${added ? 'opacity:0.4;cursor:default' : ''}">
+      <span>${escHtml(i.label)}</span>
+      <span>${escHtml(i.sub)}</span>
+    </div>`;
+  }).join('');
+}
+
+function addRef(et, eid, label) {
+  if (pendingRefs.find(r => r.entity_id === eid)) return;
+  pendingRefs.push({ entity_type: et, entity_id: eid, label });
+  renderPendingRefs();
+  renderRefPickerList();
+}
+
+function removeRef(eid) {
+  pendingRefs = pendingRefs.filter(r => r.entity_id !== eid);
+  renderPendingRefs();
+  renderRefPickerList();
+}
+
+function renderPendingRefs() {
+  const el = document.getElementById('pendingRefs');
+  if (!el) return;
+  el.innerHTML = pendingRefs.map(r =>
+    `<span class="ref-chip ${r.entity_type}" onclick="removeRef('${r.entity_id}')" title="Click to remove">
+      ${typeIcon(r.entity_type)} ${escHtml(r.label.length > 28 ? r.label.slice(0,28)+'…' : r.label)} ✕
+    </span>`
+  ).join('');
+}
+
+function typeIcon(t) { return t === 'inventory' ? '📦' : t === 'reno' ? '🔨' : '📋'; }
+
+function refChipOnclick(et, eid) {
+  if (et === 'inventory') { const i = S.inventory.find(x => x.id === eid); if (i) openInvModal(eid); }
+  if (et === 'reno')      { const w = S.reno.find(x => x.id === eid); if (w) openRenoModal(eid); }
+  if (et === 'shortlist') { const s = S.shortlist.find(x => x.id === eid); if (s) openShortlistModal(eid); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NOTIFICATIONS + PHOTOS WIRED INTO LOAD + MODAL OPENS
+// ═══════════════════════════════════════════════════════════════
+// Patch launchApp to load notifications
+const _origLaunchApp = launchApp;
+function launchApp() {
+  _origLaunchApp();
+}
+// Called after loadAll completes — load notifications
+const _origLoadAll = loadAll;
+async function loadAll() {
+  await _origLoadAll();
+  loadNotifications();
+}
+
+// Patch modal opens to load photos
+const _origOpenInvModal = openInvModal;
+function openInvModal(id) {
+  _origOpenInvModal(id);
+  loadModalPhotos('inventory', id || null, 'im_photoGrid');
+}
+
+const _origOpenRenoModal = openRenoModal;
+function openRenoModal(id) {
+  _origOpenRenoModal(id);
+  loadModalPhotos('reno', id || null, 'rm_photoGrid');
+}
+
+const _origOpenShortlistModal = openShortlistModal;
+function openShortlistModal(id) {
+  _origOpenShortlistModal(id);
+  loadModalPhotos('shortlist', id || null, 'sl_photoGrid');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UPDATED postScratch — include refs and photos
+// ═══════════════════════════════════════════════════════════════
+const _origPostScratch = postScratch;
+async function postScratch() {
+  const text = document.getElementById('scratchInput').value.trim();
+  const errEl = document.getElementById('scratchError');
+  errEl.style.display = 'none';
+  if (!text) return;
+  hideMentionDropdown();
+  try {
+    const refs = pendingRefs.map(r => ({ entity_type: r.entity_type, entity_id: r.entity_id, label: r.label }));
+    const r = await api('POST', '/api/scratchpad', { author: S.user, text, refs });
+    // Upload any pending photos
+    if (pendingPhotos.length) await uploadPendingPhotos('scratchpad', r.entry.id);
+    // If photos were uploaded, refresh the entry's attachments
+    if (r.entry.attachments !== undefined && pendingPhotos.length === 0) {
+      S.scratch.unshift(r.entry);
+    } else {
+      const fresh = await api('GET', '/api/scratchpad');
+      S.scratch = fresh.entries;
+    }
+    document.getElementById('scratchInput').value = '';
+    pendingRefs = []; renderPendingRefs();
+    pendingPhotos = []; renderPendingPhotos();
+    document.getElementById('refPickerPanel').style.display = 'none';
+    renderScratch();
+    document.getElementById('scratchFeed').scrollTop = 0;
+    // Reload notifications in case we @mentioned someone
+    loadNotifications();
+  } catch(e) {
+    errEl.textContent = 'Failed to post — ' + (e.message || 'please try again.');
+    errEl.style.display = 'block';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UPDATED renderScratch — @mentions, photos, ref chips
+// ═══════════════════════════════════════════════════════════════
+const _origRenderScratch = renderScratch;
+function renderScratch() {
+  const feed = document.getElementById('scratchFeed');
+  if (!feed) return;
+  if (!S.scratch.length) {
+    feed.innerHTML = '<div style="color:var(--muted);font-size:0.85rem">No notes yet. Be the first to post.</div>';
+    return;
+  }
+  feed.innerHTML = S.scratch.map(e => {
+    const authorCls = e.author.toLowerCase();
+    const photoHtml = (e.attachments || []).map(a =>
+      `<img class="scratch-photo-thumb" src="/uploads/${a.filename}" alt="${escHtml(a.original_name)}" onclick="openLightbox('/uploads/${a.filename}','${escHtml(a.original_name)}')">`
+    ).join('');
+    const refsHtml = (e.refs || []).map(r =>
+      `<span class="ref-chip ${r.entity_type}" onclick="refChipOnclick('${r.entity_type}','${r.entity_id}')">${typeIcon(r.entity_type)} ${escHtml(r.label.length > 32 ? r.label.slice(0,32)+'…' : r.label)}</span>`
+    ).join('');
+    return `
+      <div class="scratch-entry ${authorCls}">
+        <div class="scratch-meta">
+          <span class="scratch-author ${authorCls}">${escHtml(e.author)}</span>
+          <span style="color:var(--muted)">${e.timestamp}</span>
+          ${e.author === S.user ? `<button class="scratch-del" onclick="deleteScratch('${e.id}')">✕</button>` : ''}
+        </div>
+        <div class="scratch-text">${renderMentions(escHtml(e.text))}</div>
+        ${photoHtml ? `<div class="scratch-photos">${photoHtml}</div>` : ''}
+        ${refsHtml  ? `<div class="refs-row">${refsHtml}</div>` : ''}
+      </div>`;
+  }).join('');
 }
 </script>
 </body>

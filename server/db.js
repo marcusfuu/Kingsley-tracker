@@ -73,6 +73,35 @@ db.exec(`
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    recipient TEXT NOT NULL,
+    sender TEXT NOT NULL,
+    type TEXT DEFAULT 'mention',
+    ref_id TEXT DEFAULT '',
+    excerpt TEXT DEFAULT '',
+    is_read INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS attachments (
+    id TEXT PRIMARY KEY,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    uploaded_by TEXT DEFAULT '',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS scratchpad_refs (
+    id TEXT PRIMARY KEY,
+    scratch_id TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    label TEXT DEFAULT ''
+  );
+
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT DEFAULT ''

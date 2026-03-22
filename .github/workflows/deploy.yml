@@ -1,0 +1,43 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: SSH deploy & rebuild
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+
+            # Pull latest code
+            cd ~/kingsley-app
+            git pull origin main
+
+            # Rebuild and restart container (data volume is preserved)
+            docker compose down
+            docker compose build --no-cache
+            docker compose up -d
+
+            # Quick health check — wait up to 30s for the app to respond
+            echo "Waiting for app to come up..."
+            for i in $(seq 1 10); do
+              if curl -sf http://localhost/ > /dev/null 2>&1; then
+                echo "✅ App is up"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "⚠️  App did not respond within 30s — check docker logs"
+            exit 1

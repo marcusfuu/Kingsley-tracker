@@ -2704,28 +2704,28 @@ loadAll = async function() {
 
 // Patch modal opens to load photos
 const _origOpenInvModal = openInvModal;
-function openInvModal(id) {
+openInvModal = function(id) {
   _origOpenInvModal(id);
   loadModalPhotos('inventory', id || null, 'im_photoGrid');
-}
+};
 
 const _origOpenRenoModal = openRenoModal;
-function openRenoModal(id) {
+openRenoModal = function(id) {
   _origOpenRenoModal(id);
   loadModalPhotos('reno', id || null, 'rm_photoGrid');
-}
+};
 
 const _origOpenShortlistModal = openShortlistModal;
-function openShortlistModal(id) {
+openShortlistModal = function(id) {
   _origOpenShortlistModal(id);
   loadModalPhotos('shortlist', id || null, 'sl_photoGrid');
-}
+};
 
 // ═══════════════════════════════════════════════════════════════
 // UPDATED postScratch — include refs and photos
 // ═══════════════════════════════════════════════════════════════
 const _origPostScratch = postScratch;
-async function postScratch() {
+postScratch = async function() {
   const text = document.getElementById('scratchInput').value.trim();
   const errEl = document.getElementById('scratchError');
   errEl.style.display = 'none';
@@ -2755,13 +2755,13 @@ async function postScratch() {
     errEl.textContent = 'Failed to post — ' + (e.message || 'please try again.');
     errEl.style.display = 'block';
   }
-}
+};
 
 // ═══════════════════════════════════════════════════════════════
 // UPDATED renderScratch — @mentions, photos, ref chips
 // ═══════════════════════════════════════════════════════════════
 const _origRenderScratch = renderScratch;
-function renderScratch() {
+renderScratch = function() {
   const feed = document.getElementById('scratchFeed');
   if (!feed) return;
   if (!S.scratch.length) {
@@ -2788,7 +2788,7 @@ function renderScratch() {
         ${refsHtml  ? `<div class="refs-row">${refsHtml}</div>` : ''}
       </div>`;
   }).join('');
-}
+};
 </script>
 </body>
 </html>

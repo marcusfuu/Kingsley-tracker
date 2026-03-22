@@ -15,14 +15,14 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
+          username: ec2-user
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          port: 22
           script: |
             set -e
 
             # Pull latest code
-            cd ~/kingsley-app
+            cd ~/app
             git pull origin main
 
             # Rebuild and restart container (data volume is preserved)

@@ -278,6 +278,31 @@ app.get('/api/scratchpad-refs/:scratchId', auth, (req, res) => {
   res.json({ refs: db.prepare('SELECT * FROM scratchpad_refs WHERE scratch_id=?').all(req.params.scratchId) });
 });
 
+// ─── What's New / Last Seen ───────────────────────────────────────────────────
+app.get('/api/whats-new', auth, (req, res) => {
+  const { user } = req.query;
+  if (!user) return res.status(400).json({ error: 'user required' });
+  const key = 'last_seen_' + user.toLowerCase();
+  const row = db.prepare('SELECT value FROM settings WHERE key=?').get(key);
+  const since = row ? row.value : null;
+  if (!since) return res.json({ firstVisit: true, since: null, posts: [], activity: [], newItems: [] });
+
+  const posts    = db.prepare("SELECT * FROM scratchpad WHERE timestamp>? ORDER BY timestamp DESC LIMIT 5").all(since);
+  const activity = db.prepare("SELECT * FROM activity_log WHERE timestamp>? ORDER BY timestamp DESC LIMIT 15").all(since);
+  const invNew   = db.prepare("SELECT 'inventory' as src, name FROM inventory WHERE created_at>? LIMIT 5").all(since);
+  const renoNew  = db.prepare("SELECT 'reno' as src, description as name FROM reno_works WHERE created_at>? LIMIT 5").all(since);
+  const slNew    = db.prepare("SELECT 'shortlist' as src, name FROM shortlist WHERE created_at>? LIMIT 5").all(since);
+
+  res.json({ firstVisit: false, since, posts, activity, newItems: [...invNew, ...renoNew, ...slNew] });
+});
+
+app.put('/api/last-seen', auth, (req, res) => {
+  const { user } = req.body;
+  if (!user) return res.status(400).json({ error: 'user required' });
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, datetime('now','localtime'))").run('last_seen_' + user.toLowerCase());
+  res.json({ ok: true });
+});
+
 // ─── Activity Log ─────────────────────────────────────────────────────────────
 
 app.get('/api/activity-counts', auth, (req, res) => {

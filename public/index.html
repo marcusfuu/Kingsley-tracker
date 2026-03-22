@@ -293,6 +293,23 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   color: #0f172a; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;
 }
 
+/* ── Welcome / What's New card ── */
+.welcome-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; }
+.welcome-greeting { font-size: 1.15rem; font-weight: 700; margin-bottom: 2px; }
+.welcome-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 0; }
+.whats-new-section { margin-top: 16px; }
+.whats-new-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.whats-new-row { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-top: 1px solid var(--border); font-size: 0.82rem; line-height: 1.45; }
+.whats-new-icon { flex-shrink: 0; font-size: 0.95rem; margin-top: 1px; }
+.wn-author { font-weight: 700; }
+.wn-author.marcus { color: var(--marcus); }
+.wn-author.lucas  { color: var(--lucas); }
+.wn-author.system { color: var(--muted); }
+.whats-new-empty { font-size: 0.82rem; color: var(--muted); font-style: italic; padding-top: 8px; }
+/* ── Page guide banners ── */
+.page-guide { background: rgba(56,189,248,0.04); border: 1px solid rgba(56,189,248,0.12); border-radius: 8px; padding: 10px 16px; font-size: 0.79rem; color: var(--muted); margin-bottom: 18px; line-height: 1.7; }
+.page-guide strong { color: var(--text); font-weight: 600; }
+
 /* ── Notification bell ── */
 .notif-wrap { margin-left: auto; position: relative; display: flex; align-items: center; gap: 10px; }
 .notif-bell { background: none; border: none; cursor: pointer; font-size: 1.2rem; position: relative; padding: 4px 6px; border-radius: 6px; color: var(--text); }
@@ -605,6 +622,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <input type="file" id="imgUploadInput" accept="image/*" style="display:none" onchange="uploadDesignFile(this,'image')">
     </div>
 
+    <div class="page-guide">
+      Upload <strong>floor plans, renders, and mood board images</strong> for visual reference. For 3D models, export as <strong>.STL</strong> from SketchUp Free (File → Export → STL) or convert to <strong>.GLB</strong> via Convertio for a coloured model. In the viewer: <strong>drag</strong> to orbit, <strong>scroll</strong> to zoom, <strong>right-drag</strong> to pan.
+    </div>
     <div class="design-layout">
       <!-- Left: 3D viewer + model list -->
       <div>
@@ -665,6 +685,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 
   <!-- Dashboard -->
   <div class="page active" id="page-dashboard">
+    <div id="dashWelcome"></div>
     <div class="dash-grid" id="dashKPIs"></div>
     <div id="dashPhases"></div>
   </div>
@@ -676,6 +697,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
         <div class="section-header">
           <h2>Action Plan</h2>
           <button class="btn-add" onclick="openTaskModal()">+ Add Task</button>
+        </div>
+        <div class="page-guide">
+          All tasks from <strong>pre-offer through move-in</strong>, grouped by phase. <strong>Click any task</strong> to update its status, set a due date, assign an owner, add notes, or attach photos. Status changes are automatically logged in the activity feed on the right.
         </div>
         <div class="table-wrap">
           <table id="tasksTable">
@@ -703,6 +727,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
         <div class="section-header">
           <h2>Inventory &amp; Costing</h2>
           <button class="btn-add" onclick="openInvModal()">+ Add Item</button>
+        </div>
+        <div class="page-guide">
+          Track every item to procure — furniture, fixtures, appliances, fittings. <strong>Click any item</strong> to edit details, upload photos, or log notes. The budget bar tracks spend against your RM target. Only add items here once they are <strong>confirmed</strong> — use Shortlist for items still under consideration.
         </div>
         <div id="invBudgetBar" style="margin-bottom:16px;"></div>
         <div class="table-wrap">
@@ -734,6 +761,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
           <h2>Renovation Works</h2>
           <button class="btn-add" onclick="openRenoModal()">+ Add Work Item</button>
         </div>
+        <div class="page-guide">
+          Track all renovation scopes, contractors, and costs. <strong>Click any item</strong> to update progress, log actual costs as work is completed, upload site photos, or add notes. The budget bar compares total estimated cost against your renovation budget. Use the <strong>Blocked</strong> status to flag anything waiting on a decision or third party.
+        </div>
         <div id="renoBudgetBar" style="margin-bottom:16px;"></div>
         <div class="table-wrap">
           <table id="renoTable">
@@ -764,6 +794,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
           <h2>Shortlist</h2>
           <span style="font-size:0.8rem;color:var(--muted);flex:1">Items under consideration — not yet confirmed</span>
           <button class="btn-add" onclick="openShortlistModal()">+ Add Item</button>
+        </div>
+        <div class="page-guide">
+          Your <strong>research and planning space</strong>. Add items you're comparing or considering before committing. Paste in product links, note prices, and add reference photos. Use <strong>Priority</strong> to rank options and <strong>Status</strong> to move from Considering → Shortlisted → Rejected. Once a decision is made, add the confirmed item to Inventory separately.
         </div>
         <!-- Filter bar -->
         <div class="sl-filter-bar" id="slFilterBar">
@@ -807,6 +840,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   <!-- Scratchpad -->
   <div class="page" id="page-scratchpad">
     <div class="section-header"><h2>Scratchpad</h2></div>
+    <div class="page-guide">
+      A <strong>shared wall</strong> for Marcus and Lucas. Post updates, questions, or decisions. Type <strong>@Marcus</strong> or <strong>@Lucas</strong> to send the other person a notification. Use <strong>📎 Photo</strong> to attach images to your post, and <strong>🔗 Link Item</strong> to reference a specific item from Inventory, Renovation, or Shortlist — it'll appear as a clickable chip on your post.
+    </div>
     <div class="scratch-feed" id="scratchFeed"></div>
     <div class="compose-box" style="position:relative">
       <div class="mention-dropdown" id="mentionDropdown" style="display:none"></div>
@@ -836,6 +872,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 
   <!-- Settings -->
   <div class="page" id="page-settings">
+    <div class="page-guide" style="max-width:600px">
+      Configure shared settings for the project. <strong>Contractor Name</strong> appears across renovation items. <strong>Budget targets</strong> drive the progress bars on Inventory and Renovation — update them as your budget evolves. Changes take effect immediately across all pages.
+    </div>
     <div class="settings-card">
       <h3>Settings</h3>
       <div class="form-row">
@@ -2259,6 +2298,88 @@ function hideExportHelp() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// WHAT'S NEW / WELCOME CARD
+// ═══════════════════════════════════════════════════════════════
+async function fetchAndRenderWhatsNew() {
+  try {
+    const data = await api('GET', `/api/whats-new?user=${encodeURIComponent(S.user)}`);
+    renderWhatsNew(data);
+    // Update last-seen so next visit shows only newer activity
+    api('PUT', '/api/last-seen', { user: S.user }).catch(() => {});
+  } catch(e) { /* silent */ }
+}
+
+function renderWhatsNew(data) {
+  const el = document.getElementById('dashWelcome');
+  if (!el) return;
+
+  const hour  = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const userCls = S.user.toLowerCase();
+
+  if (data.firstVisit) {
+    el.innerHTML = `
+      <div class="welcome-card">
+        <div class="welcome-greeting">${greet}, <span class="wn-author ${userCls}">${S.user}</span>! 👋</div>
+        <div class="welcome-sub">Welcome to the Kingsley Hills SL-05b tracker. Use the nav above to get started — the <strong>Action Plan</strong> is a good place to begin.</div>
+      </div>`;
+    return;
+  }
+
+  const sinceLabel = data.since ? `since ${data.since.slice(0,16).replace('T',' ')}` : 'recently';
+  const hasAnything = data.posts.length || data.activity.length || data.newItems.length;
+
+  let sectionsHtml = '';
+
+  // Scratchpad posts from the other user
+  if (data.posts.length) {
+    const rows = data.posts.map(p => {
+      const aCls = p.author.toLowerCase();
+      const excerpt = p.text.length > 90 ? p.text.slice(0,90) + '…' : p.text;
+      return `<div class="whats-new-row">
+        <span class="whats-new-icon">💬</span>
+        <div><span class="wn-author ${aCls}">${escHtml(p.author)}</span> posted on the Scratchpad: <em style="color:var(--text)">"${escHtml(excerpt)}"</em></div>
+      </div>`;
+    }).join('');
+    sectionsHtml += `<div class="whats-new-section"><div class="whats-new-label">New messages</div>${rows}</div>`;
+  }
+
+  // Activity log entries (status changes, notes)
+  if (data.activity.length) {
+    // Dedupe: group by entity to avoid spam
+    const seen = new Set();
+    const rows = data.activity.filter(a => {
+      const k = a.entity_type + ':' + a.entity_id;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).slice(0, 6).map(a => {
+      const aCls = a.author === 'system' ? 'system' : a.author.toLowerCase();
+      const label = a.author === 'system' ? a.text : `<span class="wn-author ${aCls}">${escHtml(a.author)}</span> — ${escHtml(a.text)}`;
+      const icon  = a.entity_type === 'task' ? '✅' : a.entity_type === 'inventory' ? '📦' : '🔨';
+      return `<div class="whats-new-row"><span class="whats-new-icon">${icon}</span><div>${label}</div></div>`;
+    }).join('');
+    sectionsHtml += `<div class="whats-new-section" style="margin-top:12px"><div class="whats-new-label">Activity</div>${rows}</div>`;
+  }
+
+  // New items added
+  if (data.newItems.length) {
+    const srcLabel = { inventory: '📦 Inventory', reno: '🔨 Renovation', shortlist: '📋 Shortlist' };
+    const rows = data.newItems.map(i =>
+      `<div class="whats-new-row"><span class="whats-new-icon">➕</span><div><strong>${srcLabel[i.src] || i.src}</strong>: ${escHtml(i.name)}</div></div>`
+    ).join('');
+    sectionsHtml += `<div class="whats-new-section" style="margin-top:12px"><div class="whats-new-label">New items added</div>${rows}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="welcome-card">
+      <div class="welcome-greeting">${greet}, <span class="wn-author ${userCls}">${S.user}</span>! 👋</div>
+      <div class="welcome-sub">${hasAnything ? `Here's what happened ${sinceLabel}.` : `Nothing new ${sinceLabel} — you're all caught up.`}</div>
+      ${hasAnything ? sectionsHtml : ''}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════
 async function loadNotifications() {
@@ -2578,11 +2699,12 @@ const _origLaunchApp = launchApp;
 function launchApp() {
   _origLaunchApp();
 }
-// Called after loadAll completes — load notifications
+// Called after loadAll completes — load notifications + welcome card
 const _origLoadAll = loadAll;
 async function loadAll() {
   await _origLoadAll();
   loadNotifications();
+  fetchAndRenderWhatsNew();
 }
 
 // Patch modal opens to load photos

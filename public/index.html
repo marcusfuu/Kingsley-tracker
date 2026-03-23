@@ -487,8 +487,20 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 .totals-row td { font-weight: 700; border-top: 2px solid var(--border); background: rgba(56,189,248,0.05); }
 
 /* ── Home Design ── */
-.design-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
-@media (max-width: 1100px) { .design-layout { grid-template-columns: 1fr; } }
+.design-section { margin-bottom: 40px; }
+.design-section-hd { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.design-section-hd h3 { font-size: 0.95rem; font-weight: 700; white-space: nowrap; }
+.design-section-hd > span { font-size: 0.78rem; color: var(--muted); flex: 1; }
+
+/* Video grid */
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-top: 4px; }
+.video-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color 0.12s; }
+.video-card:hover { border-color: var(--accent); }
+.video-card iframe { width: 100%; height: 210px; display: block; border: none; background: #000; }
+.video-card-footer { display: flex; align-items: center; gap: 8px; padding: 9px 12px; }
+.video-card-label { flex: 1; font-size: 0.82rem; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-card-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; flex-shrink: 0; padding: 2px 6px; border-radius: 4px; }
+.video-card-del:hover { color: #f87171; background: rgba(248,113,113,0.1); }
 
 .model-viewer-wrap {
   background: var(--card); border: 1px solid var(--border); border-radius: 10px;
@@ -625,45 +637,61 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <div class="section-header" style="margin-bottom:20px">
       <h2>Home Design</h2>
       <button class="btn-add" onclick="document.getElementById('imgUploadInput').click()">+ Upload Image</button>
-      <button class="btn-add" style="background:var(--card);color:var(--accent);border:1px solid var(--accent)" onclick="document.getElementById('modelUploadInput').click()">+ Upload 3D Model</button>
+      <button class="btn-add" style="background:var(--card);color:#ef4444;border:1px solid #ef4444" onclick="addYouTubeLink()">▶ Add YouTube</button>
+      <button class="btn-add" style="background:var(--card);color:var(--accent);border:1px solid var(--accent)" onclick="document.getElementById('modelUploadInput').click()">⬡ Upload 3D Model</button>
       <input type="file" id="modelUploadInput" accept=".glb,.gltf,.stl" style="display:none" onchange="uploadDesignFile(this,'model')">
       <input type="file" id="imgUploadInput" accept="image/*" style="display:none" onchange="uploadDesignFile(this,'image')">
     </div>
 
     <div class="page-guide">
-      Upload <strong>floor plans, renders, and mood board images</strong> for visual reference. For 3D models, export as <strong>.STL</strong> from SketchUp Free (File → Export → STL) or convert to <strong>.GLB</strong> via Convertio for a coloured model. In the viewer: <strong>drag</strong> to orbit, <strong>scroll</strong> to zoom, <strong>right-drag</strong> to pan.
+      Upload <strong>floor plans, renders, and mood board images</strong> as the primary visual reference. Add <strong>YouTube links</strong> for inspiration videos. For 3D models, export as <strong>.STL</strong> from SketchUp Free or convert to <strong>.GLB</strong> via Convertio. In the 3D viewer: <strong>drag</strong> to orbit, <strong>scroll</strong> to zoom, <strong>right-drag</strong> to pan.
     </div>
-    <div class="design-layout">
-      <!-- Left: 3D viewer + model list -->
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <h3 style="font-size:0.95rem;font-weight:700">3D Model</h3>
-          <span style="font-size:0.78rem;color:var(--muted)">Click a model below to view — drag to orbit, scroll to zoom</span>
-        </div>
-        <div class="model-viewer-wrap" id="modelViewerWrap">
-          <div class="model-empty" id="modelEmpty">
-            <div class="big-icon">🏠</div>
-            <div>No 3D model uploaded yet</div>
-            <div style="font-size:0.78rem;text-align:center;max-width:260px;line-height:1.5">
-              Upload a <strong>.stl</strong> or <strong>.glb</strong> model file here.<br>
-              <span style="color:var(--accent);cursor:pointer" onclick="showExportHelp()">How to export from SketchUp Free →</span>
-            </div>
+
+    <!-- ① Images — lead section -->
+    <div class="design-section">
+      <div class="design-section-hd">
+        <h3>Design Images</h3>
+        <span>Renders, floor plans, mood boards</span>
+        <button class="btn-add" style="margin-left:auto" onclick="document.getElementById('imgUploadInput').click()">+ Upload Image</button>
+      </div>
+      <div class="upload-zone" onclick="document.getElementById('imgUploadInput').click()">
+        Click or drag to upload image
+      </div>
+      <div class="image-grid" id="imageGrid"></div>
+    </div>
+
+    <!-- ② YouTube Videos -->
+    <div class="design-section" id="videosSection">
+      <div class="design-section-hd">
+        <h3>Reference Videos</h3>
+        <span>YouTube links for design inspiration</span>
+        <button class="btn-add" style="margin-left:auto;background:var(--card);color:#ef4444;border:1px solid #ef4444" onclick="addYouTubeLink()">▶ Add YouTube</button>
+      </div>
+      <div class="video-empty" id="videoEmpty" style="display:none">
+        <span style="color:var(--muted);font-size:0.85rem">No videos yet — paste a YouTube link to get started.</span>
+      </div>
+      <div class="video-grid" id="videoGrid"></div>
+    </div>
+
+    <!-- ③ 3D Models — moved to bottom -->
+    <div class="design-section" id="modelsSection">
+      <div class="design-section-hd">
+        <h3>3D Models</h3>
+        <span>Click a model to view — drag to orbit, scroll to zoom</span>
+        <button class="btn-add" style="margin-left:auto;background:var(--card);color:var(--accent);border:1px solid var(--accent)" onclick="document.getElementById('modelUploadInput').click()">⬡ Upload 3D Model</button>
+        <span style="font-size:0.78rem;color:var(--muted);cursor:pointer" onclick="showExportHelp()">How to export →</span>
+      </div>
+      <div class="model-viewer-wrap" id="modelViewerWrap">
+        <div class="model-empty" id="modelEmpty">
+          <div class="big-icon">🏠</div>
+          <div>No 3D model uploaded yet</div>
+          <div style="font-size:0.78rem;text-align:center;max-width:260px;line-height:1.5">
+            Upload a <strong>.stl</strong> or <strong>.glb</strong> model file.<br>
+            <span style="color:var(--accent);cursor:pointer" onclick="showExportHelp()">How to export from SketchUp Free →</span>
           </div>
         </div>
-        <div class="model-list" id="modelList"></div>
       </div>
-
-      <!-- Right: Image gallery -->
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <h3 style="font-size:0.95rem;font-weight:700">Design Images</h3>
-          <span style="font-size:0.78rem;color:var(--muted)">Renders, floor plans, mood boards</span>
-        </div>
-        <div class="upload-zone" onclick="document.getElementById('imgUploadInput').click()">
-          Click to upload image
-        </div>
-        <div class="image-grid" id="imageGrid"></div>
-      </div>
+      <div class="model-list" id="modelList"></div>
     </div>
 
     <!-- Export help panel (hidden) -->
@@ -2181,6 +2209,29 @@ let activeModelId = null;
 function renderDesign() {
   const models = S.design.filter(a => a.type === 'model');
   const images = S.design.filter(a => a.type === 'image');
+  const videos = S.design.filter(a => a.type === 'video');
+
+  // ── Video grid ──
+  const videoGrid  = document.getElementById('videoGrid');
+  const videoEmpty = document.getElementById('videoEmpty');
+  if (videoGrid) {
+    if (videos.length === 0) {
+      if (videoEmpty) videoEmpty.style.display = 'block';
+      videoGrid.innerHTML = '';
+    } else {
+      if (videoEmpty) videoEmpty.style.display = 'none';
+      videoGrid.innerHTML = videos.map(v => `
+        <div class="video-card">
+          <iframe src="https://www.youtube.com/embed/${escHtml(v.filename)}"
+            title="${escHtml(v.label)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen loading="lazy"></iframe>
+          <div class="video-card-footer">
+            <span class="video-card-label" title="${escHtml(v.label)}">${escHtml(v.label)}</span>
+            <button class="video-card-del" onclick="deleteDesignAsset('${v.id}')" title="Remove">✕</button>
+          </div>
+        </div>`).join('');
+    }
+  }
 
   // ── 3D model viewer ──
   const wrap  = document.getElementById('modelViewerWrap');
@@ -2389,11 +2440,33 @@ async function uploadDesignFile(input, type) {
 }
 
 async function deleteDesignAsset(id) {
-  if (!confirm('Delete this file?')) return;
+  const asset = S.design.find(a => a.id === id);
+  const label = asset && asset.type === 'video' ? 'Remove this video?' : 'Delete this file?';
+  if (!confirm(label)) return;
   await api('DELETE', `/api/design/${id}`);
   S.design = S.design.filter(a => a.id !== id);
   if (activeModelId === id) activeModelId = null;
   renderDesign();
+}
+
+function extractYouTubeId(url) {
+  const m = url.match(/(?:v=|\/embed\/|youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+async function addYouTubeLink() {
+  const url = prompt('Paste a YouTube URL:');
+  if (!url || !url.trim()) return;
+  const videoId = extractYouTubeId(url.trim());
+  if (!videoId) { alert('Could not find a YouTube video ID in that URL.\n\nAccepted formats:\n• youtube.com/watch?v=...\n• youtu.be/...\n• youtube.com/shorts/...'); return; }
+  const label = prompt('Label for this video (optional — press Enter to skip):') || '';
+  try {
+    const r = await api('POST', '/api/design/video', { url: url.trim(), label: label.trim(), uploaded_by: S.user });
+    S.design.unshift(r.asset);
+    renderDesign();
+  } catch(e) {
+    alert('Could not save video: ' + (e.message || 'please try again.'));
+  }
 }
 
 function openLightbox(src, label) {

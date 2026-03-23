@@ -416,6 +416,21 @@ app.get('/api/design', auth, (req, res) => {
   res.json({ assets });
 });
 
+// Save a YouTube link as a design asset (no file write)
+app.post('/api/design/video', auth, (req, res) => {
+  const { url, label, uploaded_by } = req.body;
+  if (!url) return res.status(400).json({ error: 'url required' });
+  const m = url.match(/(?:v=|\/embed\/|youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]{11})/);
+  if (!m) return res.status(400).json({ error: 'Could not parse a YouTube video ID from that URL' });
+  const videoId = m[1];
+  const id = uid();
+  db.prepare(
+    `INSERT INTO design_assets (id,type,filename,original_name,label,section,uploaded_by,created_at)
+     VALUES (?,?,?,?,?,?,?,datetime('now','localtime'))`
+  ).run(id, 'video', videoId, url, label || url, 'general', uploaded_by || '');
+  res.json({ asset: db.prepare('SELECT * FROM design_assets WHERE id=?').get(id) });
+});
+
 app.post('/api/design/upload', auth, (req, res) => {
   const { filename, data, type, label, section, uploaded_by } = req.body;
   if (!filename || !data || !type) return res.status(400).json({ error: 'Missing fields' });
@@ -443,8 +458,11 @@ app.put('/api/design/:id', auth, (req, res) => {
 app.delete('/api/design/:id', auth, (req, res) => {
   const asset = db.prepare('SELECT * FROM design_assets WHERE id=?').get(req.params.id);
   if (asset) {
-    const filePath = path.join(uploadsDir, asset.filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // Video assets store only a YouTube ID — no local file to delete
+    if (asset.type !== 'video') {
+      const filePath = path.join(uploadsDir, asset.filename);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
     db.prepare('DELETE FROM design_assets WHERE id=?').run(req.params.id);
   }
   res.json({ ok: true });

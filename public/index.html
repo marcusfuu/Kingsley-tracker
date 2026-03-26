@@ -352,10 +352,33 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 .mention-dropdown { position: absolute; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); z-index: 500; overflow: hidden; bottom: calc(100% + 4px); left: 0; }
 .mention-opt { padding: 9px 14px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
 .mention-opt:hover { background: rgba(255,255,255,0.06); }
-/* ── Photo attachments ── */
+/* ── Photo / file attachments ── */
 .photo-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .photo-thumb { position: relative; width: 80px; height: 80px; border-radius: 6px; overflow: hidden; background: var(--bg); border: 1px solid var(--border); }
 .photo-thumb img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+.doc-thumb {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 80px; height: 80px; border-radius: 6px; background: var(--bg);
+  border: 1px solid var(--border); padding: 6px; text-align: center;
+  position: relative; text-decoration: none; color: var(--text); cursor: pointer;
+  transition: border-color 0.12s;
+}
+.doc-thumb:hover { border-color: var(--accent); }
+.doc-thumb-icon { font-size: 1.5rem; line-height: 1; }
+.doc-thumb-name { font-size: 0.58rem; color: var(--muted); margin-top: 4px; word-break: break-all; line-height: 1.2; max-height: 2.4em; overflow: hidden; }
+/* Doc card in design file gallery */
+.file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 12px; }
+.doc-file-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px 12px; display: flex; flex-direction: column; align-items: center;
+  gap: 8px; text-align: center; transition: border-color 0.12s, transform 0.1s;
+}
+.doc-file-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.doc-file-card .doc-big-icon { font-size: 2.4rem; line-height: 1; }
+.doc-file-card .doc-file-label { font-size: 0.78rem; font-weight: 500; color: var(--text); word-break: break-word; line-height: 1.3; }
+.doc-file-card-actions { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+.doc-file-open { font-size: 0.72rem; color: var(--accent); text-decoration: none; padding: 2px 6px; border: 1px solid var(--accent); border-radius: 4px; }
+.doc-file-open:hover { background: rgba(56,189,248,0.1); }
 .photo-thumb-del { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); border: none; color: #fff; border-radius: 4px; padding: 1px 5px; cursor: pointer; font-size: 0.65rem; }
 .photo-add-btn { width: 80px; height: 80px; border-radius: 6px; border: 1px dashed var(--border); background: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .photo-add-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -636,11 +659,11 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   <div class="page" id="page-design">
     <div class="section-header" style="margin-bottom:20px">
       <h2>Home Design</h2>
-      <button class="btn-add" onclick="document.getElementById('imgUploadInput').click()">+ Upload Image</button>
+      <button class="btn-add" onclick="document.getElementById('fileUploadInput').click()">+ Upload File</button>
       <button class="btn-add" style="background:var(--card);color:#ef4444;border:1px solid #ef4444" onclick="addYouTubeLink()">▶ Add YouTube</button>
       <button class="btn-add" style="background:var(--card);color:var(--accent);border:1px solid var(--accent)" onclick="document.getElementById('modelUploadInput').click()">⬡ Upload 3D Model</button>
       <input type="file" id="modelUploadInput" accept=".glb,.gltf,.stl" style="display:none" onchange="uploadDesignFile(this,'model')">
-      <input type="file" id="imgUploadInput" accept="image/*" style="display:none" onchange="uploadDesignFile(this,'image')">
+      <input type="file" id="fileUploadInput" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" multiple style="display:none" onchange="uploadDesignFile(this,'auto')">
     </div>
 
     <div class="page-guide">
@@ -650,14 +673,14 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <!-- ① Images — lead section -->
     <div class="design-section">
       <div class="design-section-hd">
-        <h3>Design Images</h3>
-        <span>Renders, floor plans, mood boards</span>
-        <button class="btn-add" style="margin-left:auto" onclick="document.getElementById('imgUploadInput').click()">+ Upload Image</button>
+        <h3>Files</h3>
+        <span>Images, PDFs, quotations, documents</span>
+        <button class="btn-add" style="margin-left:auto" onclick="document.getElementById('fileUploadInput').click()">+ Upload File</button>
       </div>
-      <div class="upload-zone" onclick="document.getElementById('imgUploadInput').click()">
-        Click or drag to upload image
+      <div class="upload-zone" onclick="document.getElementById('fileUploadInput').click()">
+        Click to upload — images, PDFs, Word docs, spreadsheets, quotations…
       </div>
-      <div class="image-grid" id="imageGrid"></div>
+      <div class="file-grid" id="imageGrid"></div>
     </div>
 
     <!-- ② YouTube Videos -->
@@ -1002,9 +1025,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <div class="form-row"><label>Notes</label><textarea id="im_notes"></textarea></div>
     <!-- Photos -->
     <div class="modal-photos">
-      <div class="modal-photos-label">Photos</div>
+      <div class="modal-photos-label">Files &amp; Attachments</div>
       <div class="photo-grid" id="im_photoGrid"></div>
-      <input type="file" id="im_photoInput" accept="image/*" multiple style="display:none" onchange="handleModalPhotoUpload(this,'inventory',()=>currentInvId)">
+      <input type="file" id="im_photoInput" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" multiple style="display:none" onchange="handleModalPhotoUpload(this,'inventory',()=>currentInvId)">
       <button class="compose-icon-btn" style="margin-top:6px" onclick="addModalImageUrl('inventory',()=>currentInvId,'im_photoGrid')">🌐 Add Image URL</button>
     </div>
     <!-- Activity log -->
@@ -1043,9 +1066,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <div class="form-row"><label>Notes</label><textarea id="rm_notes"></textarea></div>
     <!-- Photos -->
     <div class="modal-photos">
-      <div class="modal-photos-label">Photos</div>
+      <div class="modal-photos-label">Files &amp; Attachments</div>
       <div class="photo-grid" id="rm_photoGrid"></div>
-      <input type="file" id="rm_photoInput" accept="image/*" multiple style="display:none" onchange="handleModalPhotoUpload(this,'reno',()=>currentRenoId)">
+      <input type="file" id="rm_photoInput" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" multiple style="display:none" onchange="handleModalPhotoUpload(this,'reno',()=>currentRenoId)">
       <button class="compose-icon-btn" style="margin-top:6px" onclick="addModalImageUrl('reno',()=>currentRenoId,'rm_photoGrid')">🌐 Add Image URL</button>
     </div>
     <!-- Activity log -->
@@ -1089,9 +1112,9 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <div class="form-row"><label>Notes</label><textarea id="sl_notes" placeholder="Dimensions, colour options, alternatives considered…"></textarea></div>
     <!-- Photos -->
     <div class="modal-photos">
-      <div class="modal-photos-label">Photos</div>
+      <div class="modal-photos-label">Files &amp; Attachments</div>
       <div class="photo-grid" id="sl_photoGrid"></div>
-      <input type="file" id="sl_photoInput" accept="image/*" multiple style="display:none" onchange="handleModalPhotoUpload(this,'shortlist',()=>currentShortlistId)">
+      <input type="file" id="sl_photoInput" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" multiple style="display:none" onchange="handleModalPhotoUpload(this,'shortlist',()=>currentShortlistId)">
       <button class="compose-icon-btn" style="margin-top:6px" onclick="addModalImageUrl('shortlist',()=>currentShortlistId,'sl_photoGrid')">🌐 Add Image URL</button>
     </div>
     <div class="modal-actions">
@@ -2299,20 +2322,35 @@ function renderDesign() {
     }
   }
 
-  // ── Image gallery ──
-  const grid = document.getElementById('imageGrid');
+  // ── Files gallery (images + documents) ──
+  const files = S.design.filter(a => a.type === 'image' || a.type === 'document');
+  const grid  = document.getElementById('imageGrid');
   if (grid) {
-    if (images.length === 0) {
-      grid.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;grid-column:1/-1;padding:8px 0">No images yet.</div>';
+    if (files.length === 0) {
+      grid.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;grid-column:1/-1;padding:8px 0">No files yet.</div>';
     } else {
-      grid.innerHTML = images.map(img => `
-        <div class="img-card">
-          <img src="/uploads/${escHtml(img.filename)}" alt="${escHtml(img.label)}" onclick="openLightbox('/uploads/${escHtml(img.filename)}','${escHtml(img.label)}')">
-          <div class="img-card-footer">
-            <span class="img-card-label" title="${escHtml(img.label)}">${escHtml(img.label || img.original_name)}</span>
-            <button class="img-card-del" onclick="deleteDesignAsset('${img.id}')" title="Delete">✕</button>
-          </div>
-        </div>`).join('');
+      grid.innerHTML = files.map(f => {
+        const label = escHtml(f.label || f.original_name);
+        const src   = `/uploads/${escHtml(f.filename)}`;
+        if (isImageFilename(f.original_name || f.filename)) {
+          return `<div class="img-card">
+            <img src="${src}" alt="${label}" onclick="openLightbox('${src}','${label}')">
+            <div class="img-card-footer">
+              <span class="img-card-label" title="${label}">${label}</span>
+              <button class="img-card-del" onclick="deleteDesignAsset('${f.id}')" title="Delete">✕</button>
+            </div>
+          </div>`;
+        } else {
+          return `<div class="doc-file-card">
+            <div class="doc-big-icon">${docIcon(f.original_name || f.filename)}</div>
+            <div class="doc-file-label" title="${label}">${label}</div>
+            <div class="doc-file-card-actions">
+              <a class="doc-file-open" href="${src}" target="_blank" rel="noopener">Open</a>
+              <button class="img-card-del" onclick="deleteDesignAsset('${f.id}')" title="Delete">✕</button>
+            </div>
+          </div>`;
+        }
+      }).join('');
     }
   }
 }
@@ -2413,30 +2451,43 @@ function mountSTLViewer(container, url) {
 }
 
 async function uploadDesignFile(input, type) {
-  const file = input.files[0];
-  if (!file) return;
-  const label = prompt(`Label for "${file.name}":`, file.name.replace(/\.[^.]+$/, ''));
-  if (label === null) return; // cancelled
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const base64 = e.target.result.split(',')[1];
-    try {
-      const r = await api('POST', '/api/design/upload', {
-        filename: file.name,
-        data: base64,
-        type,
-        label: label || file.name,
-        uploaded_by: S.user
-      });
-      S.design.unshift(r.asset);
-      if (type === 'model') activeModelId = r.asset.id;
-      renderDesign();
-    } catch(err) {
-      alert('Upload failed: ' + err.message);
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  for (const file of files) {
+    // Auto-detect type from MIME / extension
+    let resolvedType = type;
+    if (type === 'auto') {
+      resolvedType = file.type.startsWith('image/') ? 'image' : 'document';
     }
-  };
-  reader.readAsDataURL(file);
-  input.value = ''; // reset so same file can be re-selected
+    const defaultLabel = file.name.replace(/\.[^.]+$/, '');
+    const label = files.length === 1
+      ? prompt(`Label for "${file.name}":`, defaultLabel)
+      : defaultLabel;
+    if (label === null) { input.value = ''; return; } // cancelled
+    await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result.split(',')[1];
+        try {
+          const r = await api('POST', '/api/design/upload', {
+            filename: file.name,
+            data: base64,
+            type: resolvedType,
+            label: label || file.name,
+            uploaded_by: S.user
+          });
+          S.design.unshift(r.asset);
+          if (resolvedType === 'model') activeModelId = r.asset.id;
+        } catch(err) {
+          alert('Upload failed: ' + err.message);
+        }
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  input.value = '';
+  renderDesign();
 }
 
 async function deleteDesignAsset(id) {
@@ -2821,21 +2872,47 @@ function renderAddPhotoBtn(entityType) {
 
 function attSrc(a) { return a.url || '/uploads/' + a.filename; }
 
+function isImageFilename(name) {
+  return /\.(jpe?g|png|gif|webp|svg|bmp|ico|avif)$/i.test(name || '');
+}
+
+function docIcon(name) {
+  const ext = (name || '').split('.').pop().toLowerCase();
+  if (ext === 'pdf')                    return '📄';
+  if (['xls','xlsx','csv'].includes(ext)) return '📊';
+  if (['doc','docx'].includes(ext))     return '📝';
+  if (['ppt','pptx'].includes(ext))     return '📋';
+  if (['txt'].includes(ext))            return '📃';
+  return '📎';
+}
+
 function renderModalPhotoGrid(attachments, gridId, entityType) {
   const el = document.getElementById(gridId);
   if (!el) return;
   const thumbs = attachments.map(a => {
-    const src = attSrc(a);
-    return `<div class="photo-thumb">
-      <img src="${escHtml(src)}" alt="${escHtml(a.original_name)}" onclick="openLightbox('${escHtml(src)}','${escHtml(a.original_name)}')">
-      <button class="photo-thumb-del" onclick="deleteAttachment('${a.id}','${gridId}','${entityType}')">✕</button>
-    </div>`;
+    const src  = attSrc(a);
+    const name = a.original_name || '';
+    if (isImageFilename(name) || a.url) {
+      // Image thumbnail
+      return `<div class="photo-thumb">
+        <img src="${escHtml(src)}" alt="${escHtml(name)}" onclick="openLightbox('${escHtml(src)}','${escHtml(name)}')">
+        <button class="photo-thumb-del" onclick="deleteAttachment('${a.id}','${gridId}','${entityType}')">✕</button>
+      </div>`;
+    } else {
+      // Document thumb
+      const shortName = name.length > 16 ? name.slice(0, 13) + '…' : name;
+      return `<a class="doc-thumb" href="${escHtml(src)}" target="_blank" rel="noopener" title="${escHtml(name)}">
+        <span class="doc-thumb-icon">${docIcon(name)}</span>
+        <span class="doc-thumb-name">${escHtml(shortName)}</span>
+        <button class="photo-thumb-del" onclick="event.preventDefault();event.stopPropagation();deleteAttachment('${a.id}','${gridId}','${entityType}')">✕</button>
+      </a>`;
+    }
   }).join('');
   el.innerHTML = thumbs + renderAddPhotoBtn(entityType);
 }
 
 async function deleteAttachment(id, gridId, entityType) {
-  if (!confirm('Delete this photo?')) return;
+  if (!confirm('Delete this attachment?')) return;
   await api('DELETE', `/api/attachments/${id}`);
   const entityId = entityType === 'inventory' ? currentInvId : entityType === 'reno' ? currentRenoId : currentShortlistId;
   await loadModalPhotos(entityType, entityId, gridId);

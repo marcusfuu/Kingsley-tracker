@@ -410,8 +410,56 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 .compose-toolbar { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .compose-icon-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; }
 .compose-icon-btn:hover { border-color: var(--accent); color: var(--accent); }
-.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
-.lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+/* ── File Preview Overlay (images + PDFs) ── */
+.preview-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.93);
+  z-index: 4000; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.preview-close {
+  position: absolute; top: 14px; right: 18px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+  color: #fff; font-size: 1.4rem; cursor: pointer;
+  border-radius: 8px; padding: 2px 12px; line-height: 1.4;
+  z-index: 4001; transition: background 0.15s;
+}
+.preview-close:hover { background: rgba(255,255,255,0.22); }
+.preview-label {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.65); color: #cbd5e1; font-size: 0.78rem;
+  padding: 4px 14px; border-radius: 20px; white-space: nowrap;
+  max-width: 80vw; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+}
+.preview-img {
+  max-width: 92vw; max-height: 88vh;
+  border-radius: 8px; cursor: zoom-in;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  user-select: none;
+}
+.preview-img.zoomed {
+  max-width: none; max-height: none;
+  cursor: zoom-out;
+}
+.preview-zoom-hint {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.55); color: #94a3b8; font-size: 0.73rem;
+  padding: 3px 11px; border-radius: 20px; pointer-events: none;
+  transition: opacity 0.4s; white-space: nowrap;
+}
+.preview-pdf-frame {
+  width: 90vw; height: 90vh;
+  border: none; border-radius: 8px; background: #fff;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+.preview-open-link {
+  position: absolute; top: 14px; left: 18px;
+  background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3);
+  color: var(--accent); font-size: 0.78rem; cursor: pointer;
+  border-radius: 8px; padding: 4px 12px; text-decoration: none;
+  z-index: 4001; transition: background 0.15s;
+}
+.preview-open-link:hover { background: rgba(56,189,248,0.22); }
 
 /* ── Shortlist priority badges ── */
 .badge-high { background: rgba(239,68,68,0.18);  color: var(--red); }
@@ -571,17 +619,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   margin-bottom: 4px;
 }
 
-/* Lightbox */
-.lightbox-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.88);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 200; padding: 20px;
-}
-.lightbox-overlay img { max-width: 100%; max-height: 90vh; border-radius: 6px; }
-.lightbox-close {
-  position: absolute; top: 16px; right: 20px; background: none; border: none;
-  color: #fff; font-size: 2rem; cursor: pointer; line-height: 1;
-}
+/* (lightbox-overlay replaced by .preview-overlay above) */
 
 /* Upload zone */
 .upload-zone {
@@ -2341,12 +2379,16 @@ function renderDesign() {
             </div>
           </div>`;
         } else {
-          return `<div class="doc-file-card">
+          const pdf = isPdfName(f.original_name || f.filename);
+          const previewBtn = pdf
+            ? `<button class="doc-file-open" onclick="event.stopPropagation();openPreview('${src}','${label}')">Preview</button>`
+            : `<a class="doc-file-open" href="${src}" target="_blank" rel="noopener">Open</a>`;
+          return `<div class="doc-file-card" ${pdf ? `onclick="openPreview('${src}','${label}')" style="cursor:pointer"` : ''}>
             <div class="doc-big-icon">${docIcon(f.original_name || f.filename)}</div>
             <div class="doc-file-label" title="${label}">${label}</div>
             <div class="doc-file-card-actions">
-              <a class="doc-file-open" href="${src}" target="_blank" rel="noopener">Open</a>
-              <button class="img-card-del" onclick="deleteDesignAsset('${f.id}')" title="Delete">✕</button>
+              ${previewBtn}
+              <button class="img-card-del" onclick="event.stopPropagation();deleteDesignAsset('${f.id}')" title="Delete">✕</button>
             </div>
           </div>`;
         }
@@ -2520,15 +2562,7 @@ async function addYouTubeLink() {
   }
 }
 
-function openLightbox(src, label) {
-  const overlay = document.createElement('div');
-  overlay.className = 'lightbox-overlay';
-  overlay.innerHTML = `
-    <button class="lightbox-close" onclick="this.parentElement.remove()">✕</button>
-    <img src="${src}" alt="${escHtml(label)}">`;
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
-}
+// openPreview defined below — openLightbox is an alias
 
 function showExportHelp() {
   const el = document.getElementById('exportHelp');
@@ -2901,7 +2935,11 @@ function renderModalPhotoGrid(attachments, gridId, entityType) {
     } else {
       // Document thumb
       const shortName = name.length > 16 ? name.slice(0, 13) + '…' : name;
-      return `<a class="doc-thumb" href="${escHtml(src)}" target="_blank" rel="noopener" title="${escHtml(name)}">
+      const pdf = isPdfName(name);
+      const docHref   = pdf ? 'javascript:void(0)' : escHtml(src);
+      const docTarget = pdf ? '' : 'target="_blank" rel="noopener"';
+      const docClick  = pdf ? `onclick="openPreview('${escHtml(src)}','${escHtml(name)}')"` : '';
+      return `<a class="doc-thumb" href="${docHref}" ${docTarget} ${docClick} title="${escHtml(name)}">
         <span class="doc-thumb-icon">${docIcon(name)}</span>
         <span class="doc-thumb-name">${escHtml(shortName)}</span>
         <button class="photo-thumb-del" onclick="event.preventDefault();event.stopPropagation();deleteAttachment('${a.id}','${gridId}','${entityType}')">✕</button>
@@ -2918,13 +2956,80 @@ async function deleteAttachment(id, gridId, entityType) {
   await loadModalPhotos(entityType, entityId, gridId);
 }
 
-function openLightbox(src, label) {
-  const lb = document.createElement('div');
-  lb.className = 'lightbox';
-  lb.innerHTML = `<img src="${src}" alt="${escHtml(label)}">`;
-  lb.onclick = () => lb.remove();
-  document.body.appendChild(lb);
+// ─── File Preview: images (zoom) + PDFs (iframe) ──────────────
+function isPdfSrc(src) { return /\.pdf(\?|$)/i.test(src); }
+function isPdfName(name) { return (name||'').toLowerCase().endsWith('.pdf'); }
+
+function openPreview(src, label) {
+  const asPDF = isPdfSrc(src) || isPdfName(label);
+  const overlay = document.createElement('div');
+  overlay.className = 'preview-overlay';
+
+  let inner;
+  if (asPDF) {
+    inner = `
+      <a class="preview-open-link" href="${escHtml(src)}" target="_blank" rel="noopener" title="Open in new tab">⬡ Open tab</a>
+      <iframe class="preview-pdf-frame" src="${escHtml(src)}"></iframe>`;
+  } else {
+    inner = `
+      <div class="preview-zoom-hint" id="pzHint">Click image to zoom &nbsp;·&nbsp; Esc to close</div>
+      <img class="preview-img" src="${escHtml(src)}" alt="${escHtml(label||'')}"
+           onclick="toggleImgZoom(this, event)" draggable="false">`;
+  }
+
+  overlay.innerHTML = `
+    <button class="preview-close" title="Close (Esc)">✕</button>
+    ${inner}
+    <div class="preview-label">${escHtml(label||'')}</div>`;
+
+  overlay.querySelector('.preview-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  const escHandler = e => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); } };
+  document.addEventListener('keydown', escHandler);
+  overlay.addEventListener('remove', () => document.removeEventListener('keydown', escHandler));
+
+  // Auto-hide zoom hint after 3 s
+  document.body.appendChild(overlay);
+  const hint = overlay.querySelector('#pzHint');
+  if (hint) setTimeout(() => { hint.style.opacity = '0'; }, 3000);
 }
+
+function toggleImgZoom(img, e) {
+  e.stopPropagation();
+  const overlay = img.closest('.preview-overlay');
+  if (!overlay) return;
+
+  if (!img.classList.contains('zoomed')) {
+    // Zoom in — allow scrolling to pan
+    img.classList.add('zoomed');
+    overlay.style.overflow = 'auto';
+    overlay.style.alignItems = 'flex-start';
+    overlay.style.justifyContent = 'flex-start';
+    overlay.style.padding = '56px 32px 48px';
+    img.style.maxWidth = 'none';
+    img.style.maxHeight = 'none';
+    img.style.width = 'auto';
+    img.style.height = 'auto';
+    // Scale up to 2× natural size (capped so it doesn't go crazy small)
+    const scale = Math.max(1.8, window.innerWidth / (img.naturalWidth || 800) * 1.6);
+    img.style.width = (img.naturalWidth * Math.min(scale, 3)) + 'px';
+  } else {
+    // Zoom out — back to fit
+    img.classList.remove('zoomed');
+    overlay.style.overflow = '';
+    overlay.style.alignItems = '';
+    overlay.style.justifyContent = '';
+    overlay.style.padding = '';
+    img.style.maxWidth = '92vw';
+    img.style.maxHeight = '88vh';
+    img.style.width = '';
+    img.style.height = '';
+  }
+}
+
+// Backward-compat alias — all existing onclick="openLightbox(...)" calls work unchanged
+function openLightbox(src, label) { openPreview(src, label); }
 
 // ═══════════════════════════════════════════════════════════════
 // ITEM REFERENCE PICKER

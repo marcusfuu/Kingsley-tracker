@@ -645,6 +645,64 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   .user-cards { flex-direction: column; }
 }
 
+/* ── Link chips (reno ↔ task) ── */
+.link-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 10px;
+}
+.link-chip-icon { font-size: 1rem; flex-shrink: 0; }
+.link-chip-info { flex: 1; min-width: 0; }
+.link-chip-title { font-size: 0.83rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.link-chip-sub { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.link-chip-badge {
+  font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 99px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.link-chip-del {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 1rem; padding: 2px 4px; line-height: 1;
+  flex-shrink: 0;
+}
+.link-chip-del:hover { color: var(--red); }
+.link-chip:hover { border-color: var(--border); }
+.link-chip-btn {
+  background: none; border: none; cursor: pointer;
+  text-align: left; display: flex; align-items: center;
+  gap: 8px; flex: 1; min-width: 0; padding: 0;
+}
+.link-chip-btn:hover .link-chip-title { color: var(--accent); }
+/* Link picker (reused for both reno→task and task→reno) */
+.link-picker-wrap { margin-top: 6px; position: relative; }
+.link-picker-input {
+  width: 100%; padding: 7px 10px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 0.83rem;
+}
+.link-picker-input:focus { outline: none; border-color: var(--accent); }
+.link-picker-dropdown {
+  position: absolute; left: 0; right: 0; top: calc(100% + 3px);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; z-index: 500; max-height: 180px; overflow-y: auto;
+  display: none;
+}
+.link-picker-dropdown.open { display: block; }
+.link-picker-option {
+  padding: 8px 12px; cursor: pointer; font-size: 0.83rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.link-picker-option:hover { background: rgba(56,189,248,0.08); }
+.link-picker-opt-sub { font-size: 0.72rem; color: var(--muted); }
+/* Inline link indicator badges in tables */
+.tbl-link-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.7rem; font-weight: 600; padding: 1px 6px; border-radius: 99px;
+  background: rgba(56,189,248,0.12); color: var(--accent);
+  border: 1px solid rgba(56,189,248,0.22); white-space: nowrap;
+  margin-top: 3px; cursor: pointer;
+}
+.tbl-link-badge:hover { background: rgba(56,189,248,0.22); }
+
 /* ── Contacts page ── */
 .contacts-grid {
   display: grid;
@@ -1140,6 +1198,24 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       </select></div>
     <div class="form-row"><label>Due Date</label><input type="date" id="tm_due"></div>
     <div class="form-row"><label>Notes</label><textarea id="tm_notes"></textarea></div>
+    <!-- Assigned Contacts -->
+    <div class="act-section" id="tm_contactsSection" style="display:none">
+      <h4 style="margin-bottom:8px">Assigned Contacts</h4>
+      <div class="assigned-contacts-list" id="tm_assignedList"></div>
+      <div class="contact-picker-wrap" id="tm_contactPickerWrap">
+        <input class="contact-picker-input" id="tm_contactSearch" type="text" placeholder="🔍 Search contacts to assign…" oninput="filterTaskContactPicker(this.value)" onfocus="openTaskContactPicker()" autocomplete="off">
+        <div class="contact-picker-dropdown" id="tm_contactDropdown"></div>
+      </div>
+    </div>
+    <!-- Linked Renovation Works -->
+    <div class="act-section" id="tm_renoLinksSection" style="display:none">
+      <h4 style="margin-bottom:8px">Linked Renovation Works</h4>
+      <div id="tm_renoLinksList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px"></div>
+      <div class="link-picker-wrap" id="tm_renoPickerWrap">
+        <input class="link-picker-input" id="tm_renoSearch" type="text" placeholder="🔍 Search renovation works to link…" oninput="filterTaskRenoLinkPicker(this.value)" onfocus="openTaskRenoLinkPicker()" autocomplete="off">
+        <div class="link-picker-dropdown" id="tm_renoDropdown"></div>
+      </div>
+    </div>
     <!-- Activity log -->
     <div class="act-section" id="tm_actSection" style="display:none">
       <h4>Activity &amp; Notes</h4>
@@ -1261,6 +1337,15 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <div class="contact-picker-wrap" id="rm_contactPickerWrap">
         <input class="contact-picker-input" id="rm_contactSearch" type="text" placeholder="🔍 Search contacts to assign…" oninput="filterContactPicker(this.value)" onfocus="openContactPicker()" autocomplete="off">
         <div class="contact-picker-dropdown" id="rm_contactDropdown"></div>
+      </div>
+    </div>
+    <!-- Linked Action Plan Tasks -->
+    <div class="act-section" id="rm_taskLinksSection" style="display:none">
+      <h4 style="margin-bottom:8px">Linked Action Plan Tasks</h4>
+      <div id="rm_taskLinksList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px"></div>
+      <div class="link-picker-wrap" id="rm_taskPickerWrap">
+        <input class="link-picker-input" id="rm_taskSearch" type="text" placeholder="🔍 Search action plan tasks to link…" oninput="filterRenoTaskLinkPicker(this.value)" onfocus="openRenoTaskLinkPicker()" autocomplete="off">
+        <div class="link-picker-dropdown" id="rm_taskDropdown"></div>
       </div>
     </div>
     <!-- Photos -->
@@ -1606,14 +1691,22 @@ function renderTasks() {
         <td style="color:var(--muted);white-space:nowrap">${escHtml(t.num)}</td>
         <td style="max-width:280px"><span style="cursor:pointer" onclick="openTaskModal('${t.id}')">${escHtml(t.name)}</span></td>
         <td style="white-space:nowrap;color:var(--muted)">${escHtml(t.est_cost)}</td>
-        <td style="color:var(--muted)">${escHtml(t.owner)}</td>
+        <td style="color:var(--muted)">
+          ${escHtml(t.owner)}
+          ${(t._contacts&&t._contacts.length)?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">${
+            t._contacts.map(c=>`<span title="${escHtml(c.name)}${c.role?' · '+escHtml(c.role):''}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${escHtml(c.avatar_color||'#38bdf8')};color:#fff;font-size:0.58rem;font-weight:800;cursor:default">${contactInitials(c.name)}</span>`).join('')
+          }</div>`:''}
+        </td>
         <td>
           <select class="status-sel" onchange="quickStatusTask('${t.id}', this.value)">
             ${['Not Started','In Progress','Done','Blocked'].map(s=>`<option${s===t.status?' selected':''}>${s}</option>`).join('')}
           </select>
         </td>
         <td style="color:var(--muted);white-space:nowrap">${t.due_date||'—'}</td>
-        <td style="max-width:180px;color:var(--muted);font-size:0.8rem">${escHtml(t.notes)}</td>
+        <td style="max-width:180px;color:var(--muted);font-size:0.8rem">
+          ${escHtml(t.notes)}
+          ${(t._reno_links&&t._reno_links.length)?`<div><span class="tbl-link-badge" onclick="openTaskModal('${t.id}')" title="Linked renovation works">🔨 ${t._reno_links.length} reno</span></div>`:''}
+        </td>
         <td><button style="background:none;border:none;cursor:pointer;color:var(--muted)" onclick="openTaskModal('${t.id}')">✏️</button>${actBadge('task',t.id)}</td>
       </tr>`;
     });
@@ -1631,12 +1724,19 @@ async function quickStatusTask(id, newStatus) {
   renderDashboard();
 }
 
+let _taskAssignedContacts = [];
+let _taskRenoLinks        = [];
+
 function openTaskModal(id) {
   currentTaskId = id || null;
   const isNew = !id;
   document.getElementById('taskModalTitle').textContent = isNew ? 'New Task' : 'Edit Task';
   document.getElementById('taskDelBtn').style.display = isNew ? 'none' : 'inline-block';
   document.getElementById('tm_actSection').style.display = isNew ? 'none' : 'block';
+  document.getElementById('tm_contactsSection').style.display = isNew ? 'none' : 'block';
+  document.getElementById('tm_renoLinksSection').style.display = isNew ? 'none' : 'block';
+  _taskAssignedContacts = [];
+  _taskRenoLinks = [];
 
   if (id) {
     const t = S.tasks.find(x => x.id === id);
@@ -1652,6 +1752,8 @@ function openTaskModal(id) {
       document.getElementById('tm_notes').value  = t.notes;
     }
     loadModalActivity('task', id, 'tm_actFeed');
+    loadTaskContacts(id);
+    loadTaskRenoLinks(id);
   } else {
     ['tm_num','tm_name','tm_detail','tm_cost','tm_owner','tm_due','tm_notes'].forEach(f => document.getElementById(f).value = '');
     document.getElementById('tm_status').value = 'Not Started';
@@ -1859,7 +1961,10 @@ function renderReno() {
         <td style="font-weight:600;color:${Number(w.actual_cost)>Number(w.est_cost)?'var(--red)':'var(--text)'}">${fmtMoney(w.actual_cost)}</td>
         <td style="color:var(--muted);white-space:nowrap">${w.start_date||'—'}</td>
         <td style="color:var(--muted);white-space:nowrap">${w.end_date||'—'}</td>
-        <td style="color:var(--muted);font-size:0.8rem;max-width:150px">${escHtml(w.notes)}</td>
+        <td style="color:var(--muted);font-size:0.8rem;max-width:150px">
+          ${escHtml(w.notes)}
+          ${(w._task_links&&w._task_links.length)?`<div><span class="tbl-link-badge" onclick="openRenoModal('${w.id}')" title="Linked action plan tasks">📋 ${w._task_links.length} task${w._task_links.length>1?'s':''}</span></div>`:''}
+        </td>
         <td><button style="background:none;border:none;cursor:pointer;color:var(--muted)" onclick="openRenoModal('${w.id}')">✏️</button>${actBadge('reno',w.id)}</td>
       </tr>`;
     });
@@ -1892,7 +1997,9 @@ function openRenoModal(id) {
   document.getElementById('renoDelBtn').style.display = isNew ? 'none' : 'inline-block';
   document.getElementById('rm_actSection').style.display = isNew ? 'none' : 'block';
   document.getElementById('rm_contactsSection').style.display = isNew ? 'none' : 'block';
+  document.getElementById('rm_taskLinksSection').style.display = isNew ? 'none' : 'block';
   _renoAssignedContacts = [];
+  _renoTaskLinks = [];
 
   if (id) {
     const w = S.reno.find(x => x.id === id);
@@ -1909,6 +2016,7 @@ function openRenoModal(id) {
     }
     loadModalActivity('reno', id, 'rm_actFeed');
     loadRenoContacts(id);
+    loadRenoTaskLinks(id);
   } else {
     ['rm_area','rm_desc','rm_trade','rm_start','rm_end','rm_notes'].forEach(f => document.getElementById(f).value = '');
     document.getElementById('rm_status').value = 'Not Started';
@@ -2040,6 +2148,263 @@ async function deleteReno() {
   closeModal('renoModal');
   renderReno(); renderDashboard();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// TASK ↔ CONTACTS
+// ═══════════════════════════════════════════════════════════════
+async function loadTaskContacts(taskId) {
+  try { const r = await api('GET', `/api/task-contacts/${taskId}`); _taskAssignedContacts = r.contacts || []; }
+  catch(e) { _taskAssignedContacts = []; }
+  renderTaskAssignedContacts();
+}
+function renderTaskAssignedContacts() {
+  const list = document.getElementById('tm_assignedList');
+  if (!list) return;
+  if (!_taskAssignedContacts.length) {
+    list.innerHTML = `<div style="font-size:0.78rem;color:var(--muted)">No contacts assigned yet.</div>`;
+  } else {
+    list.innerHTML = _taskAssignedContacts.map(c => `
+      <div class="assigned-contact-chip">
+        <div class="assigned-chip-avatar" style="background:${escHtml(c.avatar_color||'#38bdf8')}">${contactInitials(c.name)}</div>
+        <div class="assigned-chip-info">
+          <div class="assigned-chip-name">${escHtml(c.name)}${c.company?` <span style="font-weight:400;color:var(--muted)">· ${escHtml(c.company)}</span>`:''}  </div>
+          <div class="assigned-chip-role">${escHtml(c.role||'—')}</div>
+        </div>
+        ${c.phone?`<a href="tel:${escHtml(c.phone)}" style="font-size:0.8rem;color:var(--accent);text-decoration:none" title="${escHtml(c.phone)}">📞</a>`:''}
+        <button class="assigned-chip-del" onclick="unassignTaskContact('${c.id}')" title="Remove">✕</button>
+      </div>`).join('');
+  }
+  const inp = document.getElementById('tm_contactSearch');
+  if (inp) inp.value = '';
+  closeTaskContactPicker();
+}
+function openTaskContactPicker() {
+  filterTaskContactPicker(document.getElementById('tm_contactSearch')?.value || '');
+  document.getElementById('tm_contactDropdown').classList.add('open');
+}
+function closeTaskContactPicker() {
+  document.getElementById('tm_contactDropdown')?.classList.remove('open');
+}
+function filterTaskContactPicker(q) {
+  const dd = document.getElementById('tm_contactDropdown');
+  if (!dd) return;
+  const lq = q.toLowerCase();
+  const assignedIds = new Set(_taskAssignedContacts.map(c => c.id));
+  const filtered = S.contacts.filter(c =>
+    !assignedIds.has(c.id) &&
+    (!lq || c.name.toLowerCase().includes(lq) || (c.company||'').toLowerCase().includes(lq) || (c.role||'').toLowerCase().includes(lq))
+  );
+  dd.innerHTML = filtered.length
+    ? filtered.map(c => `
+        <div class="contact-picker-option" onclick="assignTaskContact('${c.id}')">
+          <div style="background:${escHtml(c.avatar_color||'#38bdf8')};width:26px;height:26px;font-size:0.7rem;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">${contactInitials(c.name)}</div>
+          <span>${escHtml(c.name)}${c.company?` <span style="color:var(--muted);font-size:0.72rem">· ${escHtml(c.company)}</span>`:''}</span>
+          <span class="opt-role">${escHtml(c.role||'')}</span>
+        </div>`).join('')
+    : `<div class="contact-picker-option" style="color:var(--muted)">No matching contacts</div>`;
+  dd.classList.add('open');
+}
+async function assignTaskContact(contactId) {
+  if (!currentTaskId) return;
+  await api('POST', '/api/task-contacts', { task_id: currentTaskId, contact_id: contactId });
+  const c = S.contacts.find(x => x.id === contactId);
+  if (c && !_taskAssignedContacts.find(x => x.id === contactId)) _taskAssignedContacts.push(c);
+  renderTaskAssignedContacts();
+  // update in-memory task
+  const t = S.tasks.find(x => x.id === currentTaskId);
+  if (t) { t._contacts = t._contacts || []; if (!t._contacts.find(x=>x.id===contactId)) t._contacts.push(c); }
+  renderTasks();
+}
+async function unassignTaskContact(contactId) {
+  if (!currentTaskId) return;
+  await api('DELETE', `/api/task-contacts/${currentTaskId}/${contactId}`);
+  _taskAssignedContacts = _taskAssignedContacts.filter(c => c.id !== contactId);
+  renderTaskAssignedContacts();
+  const t = S.tasks.find(x => x.id === currentTaskId);
+  if (t && t._contacts) t._contacts = t._contacts.filter(x => x.id !== contactId);
+  renderTasks();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TASK ↔ RENO LINKS
+// ═══════════════════════════════════════════════════════════════
+function renoStatusColor(s) {
+  return s === 'Done' ? 'var(--green)' : s === 'In Progress' ? 'var(--accent)' : s === 'Blocked' ? 'var(--red)' : 'var(--muted)';
+}
+function taskStatusColor(s) {
+  return s === 'Done' ? 'var(--green)' : s === 'In Progress' ? 'var(--accent)' : s === 'Blocked' ? 'var(--red)' : 'var(--muted)';
+}
+
+async function loadTaskRenoLinks(taskId) {
+  try { const r = await api('GET', `/api/task-reno-links/task/${taskId}`); _taskRenoLinks = r.works || []; }
+  catch(e) { _taskRenoLinks = []; }
+  renderTaskRenoLinks();
+}
+function renderTaskRenoLinks() {
+  const list = document.getElementById('tm_renoLinksList');
+  if (!list) return;
+  if (!_taskRenoLinks.length) {
+    list.innerHTML = `<div style="font-size:0.78rem;color:var(--muted)">No renovation works linked yet.</div>`;
+  } else {
+    list.innerHTML = _taskRenoLinks.map(w => `
+      <div class="link-chip">
+        <button class="link-chip-btn" onclick="closeModal('taskModal');openRenoModal('${w.id}')">
+          <span class="link-chip-icon">🔨</span>
+          <div class="link-chip-info">
+            <div class="link-chip-title">${escHtml(w.description)}</div>
+            <div class="link-chip-sub">${escHtml(w.area)}</div>
+          </div>
+          <span class="link-chip-badge" style="background:rgba(0,0,0,0.2);color:${renoStatusColor(w.status)};border:1px solid ${renoStatusColor(w.status)}40">${escHtml(w.status)}</span>
+        </button>
+        <button class="link-chip-del" onclick="unlinkTaskReno('${w.id}')" title="Remove link">✕</button>
+      </div>`).join('');
+  }
+  const inp = document.getElementById('tm_renoSearch');
+  if (inp) inp.value = '';
+  closeTaskRenoLinkPicker();
+}
+function openTaskRenoLinkPicker() {
+  filterTaskRenoLinkPicker(document.getElementById('tm_renoSearch')?.value || '');
+  document.getElementById('tm_renoDropdown').classList.add('open');
+}
+function closeTaskRenoLinkPicker() {
+  document.getElementById('tm_renoDropdown')?.classList.remove('open');
+}
+function filterTaskRenoLinkPicker(q) {
+  const dd = document.getElementById('tm_renoDropdown');
+  if (!dd) return;
+  const lq = q.toLowerCase();
+  const linked = new Set(_taskRenoLinks.map(w => w.id));
+  const filtered = S.reno.filter(w =>
+    !linked.has(w.id) &&
+    (!lq || w.description.toLowerCase().includes(lq) || w.area.toLowerCase().includes(lq))
+  );
+  dd.innerHTML = filtered.length
+    ? filtered.map(w => `
+        <div class="link-picker-option" onclick="linkTaskReno('${w.id}')">
+          <span>🔨</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.83rem">${escHtml(w.description)}</div>
+            <div class="link-picker-opt-sub">${escHtml(w.area)}</div>
+          </div>
+          <span style="font-size:0.72rem;color:${renoStatusColor(w.status)}">${escHtml(w.status)}</span>
+        </div>`).join('')
+    : `<div class="link-picker-option" style="color:var(--muted)">No matching renovation works</div>`;
+  dd.classList.add('open');
+}
+async function linkTaskReno(renoId) {
+  if (!currentTaskId) return;
+  await api('POST', '/api/task-reno-links', { task_id: currentTaskId, reno_id: renoId });
+  const w = S.reno.find(x => x.id === renoId);
+  if (w && !_taskRenoLinks.find(x => x.id === renoId)) _taskRenoLinks.push(w);
+  renderTaskRenoLinks();
+  // update in-memory reno
+  if (w) { w._task_links = w._task_links || []; const t = S.tasks.find(x=>x.id===currentTaskId); if(t&&!w._task_links.find(x=>x.id===currentTaskId)) w._task_links.push(t); }
+  const t = S.tasks.find(x=>x.id===currentTaskId); if(t){ t._reno_links=t._reno_links||[]; if(!t._reno_links.find(x=>x.id===renoId)) t._reno_links.push(w); }
+  renderTasks(); renderReno();
+}
+async function unlinkTaskReno(renoId) {
+  if (!currentTaskId) return;
+  await api('DELETE', `/api/task-reno-links/${currentTaskId}/${renoId}`);
+  _taskRenoLinks = _taskRenoLinks.filter(w => w.id !== renoId);
+  renderTaskRenoLinks();
+  const w = S.reno.find(x=>x.id===renoId); if(w&&w._task_links) w._task_links=w._task_links.filter(x=>x.id!==currentTaskId);
+  const t = S.tasks.find(x=>x.id===currentTaskId); if(t&&t._reno_links) t._reno_links=t._reno_links.filter(x=>x.id!==renoId);
+  renderTasks(); renderReno();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENO ↔ TASK LINKS (manage from reno modal side)
+// ═══════════════════════════════════════════════════════════════
+let _renoTaskLinks = [];
+
+async function loadRenoTaskLinks(renoId) {
+  try { const r = await api('GET', `/api/task-reno-links/reno/${renoId}`); _renoTaskLinks = r.tasks || []; }
+  catch(e) { _renoTaskLinks = []; }
+  renderRenoTaskLinks();
+}
+function renderRenoTaskLinks() {
+  const list = document.getElementById('rm_taskLinksList');
+  if (!list) return;
+  if (!_renoTaskLinks.length) {
+    list.innerHTML = `<div style="font-size:0.78rem;color:var(--muted)">No action plan tasks linked yet.</div>`;
+  } else {
+    list.innerHTML = _renoTaskLinks.map(t => `
+      <div class="link-chip">
+        <button class="link-chip-btn" onclick="closeModal('renoModal');openTaskModal('${t.id}')">
+          <span class="link-chip-icon">📋</span>
+          <div class="link-chip-info">
+            <div class="link-chip-title">${t.num ? `<span style="color:var(--muted);font-size:0.75rem">${escHtml(t.num)} </span>` : ''}${escHtml(t.name)}</div>
+            <div class="link-chip-sub">${escHtml(PHASES[t.phase]||t.phase)}</div>
+          </div>
+          <span class="link-chip-badge" style="background:rgba(0,0,0,0.2);color:${taskStatusColor(t.status)};border:1px solid ${taskStatusColor(t.status)}40">${escHtml(t.status)}</span>
+        </button>
+        <button class="link-chip-del" onclick="unlinkRenoTask('${t.id}')" title="Remove link">✕</button>
+      </div>`).join('');
+  }
+  const inp = document.getElementById('rm_taskSearch');
+  if (inp) inp.value = '';
+  closeRenoTaskLinkPicker();
+}
+function openRenoTaskLinkPicker() {
+  filterRenoTaskLinkPicker(document.getElementById('rm_taskSearch')?.value || '');
+  document.getElementById('rm_taskDropdown').classList.add('open');
+}
+function closeRenoTaskLinkPicker() {
+  document.getElementById('rm_taskDropdown')?.classList.remove('open');
+}
+function filterRenoTaskLinkPicker(q) {
+  const dd = document.getElementById('rm_taskDropdown');
+  if (!dd) return;
+  const lq = q.toLowerCase();
+  const linked = new Set(_renoTaskLinks.map(t => t.id));
+  const filtered = S.tasks.filter(t =>
+    !linked.has(t.id) &&
+    (!lq || t.name.toLowerCase().includes(lq) || (t.num||'').toLowerCase().includes(lq) || (t.owner||'').toLowerCase().includes(lq))
+  );
+  dd.innerHTML = filtered.length
+    ? filtered.map(t => `
+        <div class="link-picker-option" onclick="linkRenoTask('${t.id}')">
+          <span>📋</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.83rem">${t.num?`<span style="color:var(--muted);font-size:0.75rem">${escHtml(t.num)} </span>`:''}${escHtml(t.name)}</div>
+            <div class="link-picker-opt-sub">${escHtml(PHASES[t.phase]||t.phase)}</div>
+          </div>
+          <span style="font-size:0.72rem;color:${taskStatusColor(t.status)}">${escHtml(t.status)}</span>
+        </div>`).join('')
+    : `<div class="link-picker-option" style="color:var(--muted)">No matching tasks</div>`;
+  dd.classList.add('open');
+}
+async function linkRenoTask(taskId) {
+  if (!currentRenoId) return;
+  await api('POST', '/api/task-reno-links', { task_id: taskId, reno_id: currentRenoId });
+  const t = S.tasks.find(x => x.id === taskId);
+  if (t && !_renoTaskLinks.find(x => x.id === taskId)) _renoTaskLinks.push(t);
+  renderRenoTaskLinks();
+  // update in-memory
+  const w = S.reno.find(x=>x.id===currentRenoId); if(w){ w._task_links=w._task_links||[]; if(!w._task_links.find(x=>x.id===taskId)) w._task_links.push(t); }
+  if(t){ t._reno_links=t._reno_links||[]; if(!t._reno_links.find(x=>x.id===currentRenoId)) t._reno_links.push(w); }
+  renderTasks(); renderReno();
+}
+async function unlinkRenoTask(taskId) {
+  if (!currentRenoId) return;
+  await api('DELETE', `/api/task-reno-links/${taskId}/${currentRenoId}`);
+  _renoTaskLinks = _renoTaskLinks.filter(t => t.id !== taskId);
+  renderRenoTaskLinks();
+  const w = S.reno.find(x=>x.id===currentRenoId); if(w&&w._task_links) w._task_links=w._task_links.filter(x=>x.id!==taskId);
+  const t = S.tasks.find(x=>x.id===taskId); if(t&&t._reno_links) t._reno_links=t._reno_links.filter(x=>x.id!==currentRenoId);
+  renderTasks(); renderReno();
+}
+
+// Close pickers when clicking outside (task modal)
+document.addEventListener('click', e => {
+  const tCon = document.getElementById('tm_contactPickerWrap');
+  if (tCon && !tCon.contains(e.target)) closeTaskContactPicker();
+  const tReno = document.getElementById('tm_renoPickerWrap');
+  if (tReno && !tReno.contains(e.target)) closeTaskRenoLinkPicker();
+  const rTask = document.getElementById('rm_taskPickerWrap');
+  if (rTask && !rTask.contains(e.target)) closeRenoTaskLinkPicker();
+});
 
 // ═══════════════════════════════════════════════════════════════
 // CONTACTS

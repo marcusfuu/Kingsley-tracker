@@ -153,6 +153,20 @@ db.exec(`
     contact_id TEXT NOT NULL,
     UNIQUE(reno_id, contact_id)
   );
+
+  CREATE TABLE IF NOT EXISTS task_contacts (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL,
+    contact_id TEXT NOT NULL,
+    UNIQUE(task_id, contact_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS task_reno_links (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL,
+    reno_id TEXT NOT NULL,
+    UNIQUE(task_id, reno_id)
+  );
 `);
 
 // Add url column to attachments (safe to run on existing DBs — fails silently if already exists)

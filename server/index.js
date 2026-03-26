@@ -57,6 +57,18 @@ app.put('/api/settings', auth, (req, res) => {
 // ─── Tasks ────────────────────────────────────────────────────────────────────
 app.get('/api/tasks', auth, (req, res) => {
   const tasks = db.prepare('SELECT * FROM tasks ORDER BY phase, sort_order, id').all();
+  const contactQ = db.prepare(
+    `SELECT c.id, c.name, c.role, c.avatar_color FROM contacts c
+     JOIN task_contacts tc ON tc.contact_id = c.id WHERE tc.task_id = ?`
+  );
+  const renoLinkQ = db.prepare(
+    `SELECT r.id, r.area, r.description, r.status FROM reno_works r
+     JOIN task_reno_links trl ON trl.reno_id = r.id WHERE trl.task_id = ?`
+  );
+  tasks.forEach(t => {
+    t._contacts  = contactQ.all(t.id);
+    t._reno_links = renoLinkQ.all(t.id);
+  });
   res.json({ tasks });
 });
 
@@ -132,12 +144,18 @@ app.delete('/api/inventory/:id', auth, (req, res) => {
 // ─── Renovation Works ─────────────────────────────────────────────────────────
 app.get('/api/reno', auth, (req, res) => {
   const works = db.prepare('SELECT * FROM reno_works ORDER BY area, created_at').all();
-  // Attach assigned contact names to each work item (for table display)
   const contactQ = db.prepare(
     `SELECT c.id, c.name, c.role, c.avatar_color FROM contacts c
      JOIN reno_contacts rc ON rc.contact_id = c.id WHERE rc.reno_id = ?`
   );
-  works.forEach(w => { w._contacts = contactQ.all(w.id); });
+  const taskLinkQ = db.prepare(
+    `SELECT t.id, t.num, t.name, t.status FROM tasks t
+     JOIN task_reno_links trl ON trl.task_id = t.id WHERE trl.reno_id = ?`
+  );
+  works.forEach(w => {
+    w._contacts   = contactQ.all(w.id);
+    w._task_links = taskLinkQ.all(w.id);
+  });
   res.json({ works });
 });
 
@@ -529,6 +547,61 @@ app.post('/api/reno-contacts', auth, (req, res) => {
 
 app.delete('/api/reno-contacts/:renoId/:contactId', auth, (req, res) => {
   db.prepare('DELETE FROM reno_contacts WHERE reno_id=? AND contact_id=?').run(req.params.renoId, req.params.contactId);
+  res.json({ ok: true });
+});
+
+// ─── Task ↔ Contact assignments ───────────────────────────────────────────────
+app.get('/api/task-contacts/:taskId', auth, (req, res) => {
+  const rows = db.prepare(
+    `SELECT c.* FROM contacts c
+     JOIN task_contacts tc ON tc.contact_id = c.id
+     WHERE tc.task_id = ? ORDER BY c.name COLLATE NOCASE`
+  ).all(req.params.taskId);
+  res.json({ contacts: rows });
+});
+
+app.post('/api/task-contacts', auth, (req, res) => {
+  const { task_id, contact_id } = req.body;
+  if (!task_id || !contact_id) return res.status(400).json({ error: 'task_id and contact_id required' });
+  try {
+    db.prepare('INSERT INTO task_contacts (id, task_id, contact_id) VALUES (?, ?, ?)').run(uid(), task_id, contact_id);
+  } catch(e) { /* duplicate — ignore */ }
+  res.json({ ok: true });
+});
+
+app.delete('/api/task-contacts/:taskId/:contactId', auth, (req, res) => {
+  db.prepare('DELETE FROM task_contacts WHERE task_id=? AND contact_id=?').run(req.params.taskId, req.params.contactId);
+  res.json({ ok: true });
+});
+
+// ─── Task ↔ Reno links ────────────────────────────────────────────────────────
+app.get('/api/task-reno-links/task/:taskId', auth, (req, res) => {
+  const rows = db.prepare(
+    `SELECT r.* FROM reno_works r
+     JOIN task_reno_links trl ON trl.reno_id = r.id WHERE trl.task_id = ?`
+  ).all(req.params.taskId);
+  res.json({ works: rows });
+});
+
+app.get('/api/task-reno-links/reno/:renoId', auth, (req, res) => {
+  const rows = db.prepare(
+    `SELECT t.* FROM tasks t
+     JOIN task_reno_links trl ON trl.task_id = t.id WHERE trl.reno_id = ?`
+  ).all(req.params.renoId);
+  res.json({ tasks: rows });
+});
+
+app.post('/api/task-reno-links', auth, (req, res) => {
+  const { task_id, reno_id } = req.body;
+  if (!task_id || !reno_id) return res.status(400).json({ error: 'task_id and reno_id required' });
+  try {
+    db.prepare('INSERT INTO task_reno_links (id, task_id, reno_id) VALUES (?, ?, ?)').run(uid(), task_id, reno_id);
+  } catch(e) { /* duplicate — ignore */ }
+  res.json({ ok: true });
+});
+
+app.delete('/api/task-reno-links/:taskId/:renoId', auth, (req, res) => {
+  db.prepare('DELETE FROM task_reno_links WHERE task_id=? AND reno_id=?').run(req.params.taskId, req.params.renoId);
   res.json({ ok: true });
 });
 

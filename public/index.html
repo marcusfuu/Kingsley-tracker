@@ -430,16 +430,24 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   padding: 4px 14px; border-radius: 20px; white-space: nowrap;
   max-width: 80vw; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
 }
-.preview-img {
-  max-width: 92vw; max-height: 88vh;
-  border-radius: 8px; cursor: zoom-in;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-  user-select: none;
+.preview-img-wrap {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  /* transform applied via JS — origin is center */
+  transform-origin: 50% 50%;
+  will-change: transform;
+  cursor: grab;
+  user-select: none; -webkit-user-select: none;
 }
-.preview-img.zoomed {
-  max-width: none; max-height: none;
-  cursor: zoom-out;
+.preview-img-wrap.pv-dragging { cursor: grabbing; }
+.preview-img {
+  display: block;
+  max-width: 92vw; max-height: 88vh;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  user-select: none; -webkit-user-select: none;
+  pointer-events: none; /* wrap handles all events */
+  touch-action: none;
 }
 .preview-zoom-hint {
   position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
@@ -2956,25 +2964,27 @@ async function deleteAttachment(id, gridId, entityType) {
   await loadModalPhotos(entityType, entityId, gridId);
 }
 
-// ─── File Preview: images (zoom) + PDFs (iframe) ──────────────
-function isPdfSrc(src) { return /\.pdf(\?|$)/i.test(src); }
-function isPdfName(name) { return (name||'').toLowerCase().endsWith('.pdf'); }
+// ─── File Preview: scroll-wheel zoom + drag-to-pan + PDF iframe ──
+function isPdfSrc(src)  { return /\.pdf(\?|$)/i.test(src); }
+function isPdfName(name){ return (name||'').toLowerCase().endsWith('.pdf'); }
 
 function openPreview(src, label) {
   const asPDF = isPdfSrc(src) || isPdfName(label);
   const overlay = document.createElement('div');
   overlay.className = 'preview-overlay';
+  overlay.style.overflow = 'hidden';
 
   let inner;
   if (asPDF) {
     inner = `
-      <a class="preview-open-link" href="${escHtml(src)}" target="_blank" rel="noopener" title="Open in new tab">⬡ Open tab</a>
+      <a class="preview-open-link" href="${escHtml(src)}" target="_blank" rel="noopener" title="Open in new tab">↗ Open tab</a>
       <iframe class="preview-pdf-frame" src="${escHtml(src)}"></iframe>`;
   } else {
     inner = `
-      <div class="preview-zoom-hint" id="pzHint">Click image to zoom &nbsp;·&nbsp; Esc to close</div>
-      <img class="preview-img" src="${escHtml(src)}" alt="${escHtml(label||'')}"
-           onclick="toggleImgZoom(this, event)" draggable="false">`;
+      <div class="preview-zoom-hint" id="pzHint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+      <div class="preview-img-wrap" id="pvWrap">
+        <img class="preview-img" src="${escHtml(src)}" alt="${escHtml(label||'')}" draggable="false">
+      </div>`;
   }
 
   overlay.innerHTML = `
@@ -2983,49 +2993,149 @@ function openPreview(src, label) {
     <div class="preview-label">${escHtml(label||'')}</div>`;
 
   overlay.querySelector('.preview-close').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  // Only close on click if directly on the dark backdrop (not on the image/wrap)
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.remove();
+  });
 
-  const escHandler = e => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); } };
+  const escHandler = e => {
+    if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); }
+  };
   document.addEventListener('keydown', escHandler);
-  overlay.addEventListener('remove', () => document.removeEventListener('keydown', escHandler));
 
-  // Auto-hide zoom hint after 3 s
   document.body.appendChild(overlay);
+
+  // Fade out hint after 3 s
   const hint = overlay.querySelector('#pzHint');
   if (hint) setTimeout(() => { hint.style.opacity = '0'; }, 3000);
+
+  // Wire up pan/zoom for image previews
+  const wrap = overlay.querySelector('#pvWrap');
+  if (wrap) _initPanZoom(wrap, overlay);
 }
 
-function toggleImgZoom(img, e) {
-  e.stopPropagation();
-  const overlay = img.closest('.preview-overlay');
-  if (!overlay) return;
+function _initPanZoom(wrap, overlay) {
+  let scale = 1;
+  let tx = 0, ty = 0;           // current translation (px)
+  let dragActive = false;
+  let dragStartX, dragStartY;   // mouse pos at drag start
+  let dragTx0, dragTy0;         // tx/ty at drag start
+  let lastPinchDist = null;
 
-  if (!img.classList.contains('zoomed')) {
-    // Zoom in — allow scrolling to pan
-    img.classList.add('zoomed');
-    overlay.style.overflow = 'auto';
-    overlay.style.alignItems = 'flex-start';
-    overlay.style.justifyContent = 'flex-start';
-    overlay.style.padding = '56px 32px 48px';
-    img.style.maxWidth = 'none';
-    img.style.maxHeight = 'none';
-    img.style.width = 'auto';
-    img.style.height = 'auto';
-    // Scale up to 2× natural size (capped so it doesn't go crazy small)
-    const scale = Math.max(1.8, window.innerWidth / (img.naturalWidth || 800) * 1.6);
-    img.style.width = (img.naturalWidth * Math.min(scale, 3)) + 'px';
-  } else {
-    // Zoom out — back to fit
-    img.classList.remove('zoomed');
-    overlay.style.overflow = '';
-    overlay.style.alignItems = '';
-    overlay.style.justifyContent = '';
-    overlay.style.padding = '';
-    img.style.maxWidth = '92vw';
-    img.style.maxHeight = '88vh';
-    img.style.width = '';
-    img.style.height = '';
+  function clampTx(v) {
+    // Allow panning up to half the scaled image size beyond centre
+    const limit = Math.max(0, (wrap.offsetWidth  * scale - overlay.clientWidth)  / 2 + 60);
+    return Math.max(-limit, Math.min(limit, v));
   }
+  function clampTy(v) {
+    const limit = Math.max(0, (wrap.offsetHeight * scale - overlay.clientHeight) / 2 + 60);
+    return Math.max(-limit, Math.min(limit, v));
+  }
+
+  function applyTransform(animate) {
+    if (scale <= 1.001) { tx = 0; ty = 0; }   // snap to centre when at base scale
+    else { tx = clampTx(tx); ty = clampTy(ty); }
+    wrap.style.transition = animate ? 'transform 0.2s ease' : 'none';
+    wrap.style.transform  = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    wrap.style.cursor     = scale > 1.001 ? (dragActive ? 'grabbing' : 'grab') : 'default';
+  }
+
+  // ── Scroll wheel zoom (cursor-centred) ──
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const factor  = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const newScale = Math.max(1, Math.min(8, scale * factor));
+
+    // Zoom toward the cursor position
+    const rect   = overlay.getBoundingClientRect();
+    const ox     = e.clientX - rect.left - rect.width  / 2;   // offset from overlay centre
+    const oy     = e.clientY - rect.top  - rect.height / 2;
+    // Adjust translation so the point under the cursor stays fixed
+    tx = ox - (ox - tx) * (newScale / scale);
+    ty = oy - (oy - ty) * (newScale / scale);
+
+    scale = newScale;
+    applyTransform(false);
+  }, { passive: false });
+
+  // ── Mouse drag ──
+  wrap.addEventListener('mousedown', e => {
+    if (scale <= 1.001) return;   // no drag at base zoom
+    dragActive = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    dragTx0 = tx; dragTy0 = ty;
+    wrap.classList.add('pv-dragging');
+    e.preventDefault();
+  });
+
+  function onMouseMove(e) {
+    if (!dragActive) return;
+    tx = dragTx0 + (e.clientX - dragStartX);
+    ty = dragTy0 + (e.clientY - dragStartY);
+    applyTransform(false);
+  }
+  function onMouseUp() {
+    if (!dragActive) return;
+    dragActive = false;
+    wrap.classList.remove('pv-dragging');
+    applyTransform(false); // clamp on release
+  }
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup',   onMouseUp);
+
+  // Clean up global listeners when overlay is removed
+  const obs = new MutationObserver(() => {
+    if (!document.body.contains(overlay)) {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup',   onMouseUp);
+      obs.disconnect();
+    }
+  });
+  obs.observe(document.body, { childList: true });
+
+  // ── Touch: pinch-to-zoom + single-finger pan ──
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      lastPinchDist = Math.hypot(
+        e.touches[1].clientX - e.touches[0].clientX,
+        e.touches[1].clientY - e.touches[0].clientY);
+    } else if (e.touches.length === 1 && scale > 1.001) {
+      dragActive = true;
+      dragStartX = e.touches[0].clientX;
+      dragStartY = e.touches[0].clientY;
+      dragTx0 = tx; dragTy0 = ty;
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && lastPinchDist !== null) {
+      e.preventDefault();
+      const newDist = Math.hypot(
+        e.touches[1].clientX - e.touches[0].clientX,
+        e.touches[1].clientY - e.touches[0].clientY);
+      scale = Math.max(1, Math.min(8, scale * (newDist / lastPinchDist)));
+      lastPinchDist = newDist;
+      applyTransform(false);
+    } else if (e.touches.length === 1 && dragActive) {
+      tx = dragTx0 + (e.touches[0].clientX - dragStartX);
+      ty = dragTy0 + (e.touches[0].clientY - dragStartY);
+      applyTransform(false);
+    }
+  }, { passive: false });
+
+  wrap.addEventListener('touchend', e => {
+    if (e.touches.length < 2) lastPinchDist = null;
+    if (e.touches.length === 0) { dragActive = false; applyTransform(false); }
+  }, { passive: true });
+
+  // ── Double-click resets to fit ──
+  wrap.addEventListener('dblclick', () => {
+    scale = 1; tx = 0; ty = 0;
+    applyTransform(true);
+  });
 }
 
 // Backward-compat alias — all existing onclick="openLightbox(...)" calls work unchanged

@@ -644,6 +644,96 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   .modal { padding: 18px; }
   .user-cards { flex-direction: column; }
 }
+
+/* ── Contacts page ── */
+.contacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px; margin-top: 4px;
+}
+.contact-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 10px;
+  cursor: pointer; transition: border-color 0.14s, transform 0.1s;
+}
+.contact-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.contact-card-top { display: flex; align-items: center; gap: 14px; }
+.contact-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.2rem; color: #fff; flex-shrink: 0;
+}
+.contact-name { font-weight: 700; font-size: 0.98rem; }
+.contact-company { font-size: 0.78rem; color: var(--muted); margin-top: 1px; }
+.contact-role-badge {
+  display: inline-flex; align-items: center;
+  font-size: 0.72rem; font-weight: 600;
+  background: rgba(56,189,248,0.12); color: var(--accent);
+  border: 1px solid rgba(56,189,248,0.25); border-radius: 99px;
+  padding: 2px 9px; width: fit-content;
+}
+.contact-detail-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.8rem; color: var(--muted);
+}
+.contact-detail-row a { color: var(--accent); text-decoration: none; }
+.contact-detail-row a:hover { text-decoration: underline; }
+.contact-notes-row {
+  font-size: 0.78rem; color: var(--muted);
+  border-top: 1px solid var(--border); padding-top: 8px;
+  line-height: 1.4;
+}
+/* Assigned contacts chips inside reno modal */
+.assigned-contacts-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.assigned-contact-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 10px;
+}
+.assigned-chip-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.8rem; color: #fff; flex-shrink: 0;
+}
+.assigned-chip-info { flex: 1; min-width: 0; }
+.assigned-chip-name { font-size: 0.83rem; font-weight: 600; }
+.assigned-chip-role { font-size: 0.73rem; color: var(--muted); }
+.assigned-chip-del {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 1rem; padding: 2px 4px; line-height: 1;
+}
+.assigned-chip-del:hover { color: var(--red); }
+.contact-picker-wrap {
+  margin-top: 6px; position: relative;
+}
+.contact-picker-input {
+  width: 100%; padding: 7px 10px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 0.83rem;
+}
+.contact-picker-input:focus { outline: none; border-color: var(--accent); }
+.contact-picker-dropdown {
+  position: absolute; left: 0; right: 0; top: calc(100% + 3px);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; z-index: 500; max-height: 180px; overflow-y: auto;
+  display: none;
+}
+.contact-picker-dropdown.open { display: block; }
+.contact-picker-option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; cursor: pointer; font-size: 0.83rem;
+}
+.contact-picker-option:hover { background: rgba(56,189,248,0.08); }
+.contact-picker-option .opt-role { font-size: 0.72rem; color: var(--muted); margin-left: auto; }
+/* Color palette for contact avatar picker */
+.color-swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.color-swatch {
+  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: border-color 0.12s, transform 0.1s;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.selected { border-color: #fff; }
 </style>
 </head>
 <body>
@@ -697,6 +787,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <button class="nav-btn" onclick="showPage('inventory')">Inventory</button>
     <button class="nav-btn" onclick="showPage('reno')">Renovation</button>
     <button class="nav-btn" onclick="showPage('shortlist')">Shortlist</button>
+    <button class="nav-btn" onclick="showPage('contacts')">Contacts</button>
     <button class="nav-btn" onclick="showPage('scratchpad')">Scratchpad</button>
     <button class="nav-btn" onclick="showPage('settings')">Settings</button>
   </nav>
@@ -943,6 +1034,18 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   </div>
 
   <!-- Scratchpad -->
+  <!-- Contacts -->
+  <div class="page" id="page-contacts">
+    <div class="section-header">
+      <h2>Contacts</h2>
+      <button class="btn-add" onclick="openContactModal()">+ Add Contact</button>
+    </div>
+    <div class="page-guide">
+      Store details for every contractor, supplier, or professional engaged for the property. <strong>Click a card</strong> to edit or view full details. Contacts can be <strong>assigned to Renovation Works</strong> — open any work item and use the Contacts section to link the relevant people.
+    </div>
+    <div id="contactsGrid" class="contacts-grid"></div>
+  </div>
+
   <div class="page" id="page-scratchpad">
     <div class="section-header"><h2>Scratchpad</h2></div>
     <div class="page-guide">
@@ -1094,6 +1197,47 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 </div>
 
 <!-- Reno Modal -->
+<!-- Contact Modal -->
+<div class="modal-overlay" id="contactModal" style="display:none">
+  <div class="modal">
+    <h3 id="contactModalTitle">New Contact</h3>
+    <!-- Avatar preview + color picker -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+      <div id="cm_avatarPreview" class="contact-avatar" style="width:54px;height:54px;font-size:1.4rem;background:#38bdf8">?</div>
+      <div style="flex:1">
+        <div style="font-size:0.73rem;color:var(--muted);margin-bottom:6px">Avatar colour</div>
+        <div class="color-swatches" id="cm_swatches"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+      <div class="form-row" style="grid-column:1/-1"><label>Full Name *</label><input type="text" id="cm_name" placeholder="e.g. Ahmad bin Razak"></div>
+      <div class="form-row"><label>Company / Business</label><input type="text" id="cm_company" placeholder="e.g. Rapid Build Sdn Bhd"></div>
+      <div class="form-row"><label>Trade / Role</label><input type="text" id="cm_role" list="cm_roleList" placeholder="e.g. Plumber, Electrician"></div>
+      <datalist id="cm_roleList">
+        <option>Architect</option><option>Interior Designer</option>
+        <option>General Contractor</option><option>Electrical</option>
+        <option>Plumbing</option><option>Tiling</option>
+        <option>Painting</option><option>Carpentry</option>
+        <option>Air Conditioning</option><option>Landscaping</option>
+        <option>Roofing</option><option>Waterproofing</option>
+        <option>Glazing / Aluminium</option><option>Flooring</option>
+        <option>Structural / Civil</option><option>Pest Control</option>
+        <option>Inspector</option><option>Solicitor</option>
+        <option>Valuer</option><option>Supplier</option><option>Other</option>
+      </datalist>
+      <div class="form-row"><label>Phone</label><input type="tel" id="cm_phone" placeholder="+60 12-345 6789"></div>
+      <div class="form-row"><label>Email</label><input type="email" id="cm_email" placeholder="name@example.com"></div>
+    </div>
+    <div class="form-row"><label>Notes</label><textarea id="cm_notes" rows="3" placeholder="Bank account, registration number, preferred contact times…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-del" id="contactDelBtn" onclick="deleteContact()" style="display:none">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('contactModal')">Cancel</button>
+      <button class="btn-save" onclick="saveContact()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reno Modal -->
 <div class="modal-overlay" id="renoModal" style="display:none">
   <div class="modal">
     <h3 id="renoModalTitle">Renovation Work</h3>
@@ -1110,6 +1254,15 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <div class="form-row"><label>Start Date</label><input type="date" id="rm_start"></div>
     <div class="form-row"><label>End Date</label><input type="date" id="rm_end"></div>
     <div class="form-row"><label>Notes</label><textarea id="rm_notes"></textarea></div>
+    <!-- Assigned Contacts -->
+    <div class="act-section" id="rm_contactsSection" style="display:none">
+      <h4 style="margin-bottom:8px">Assigned Contacts</h4>
+      <div class="assigned-contacts-list" id="rm_assignedList"></div>
+      <div class="contact-picker-wrap" id="rm_contactPickerWrap">
+        <input class="contact-picker-input" id="rm_contactSearch" type="text" placeholder="🔍 Search contacts to assign…" oninput="filterContactPicker(this.value)" onfocus="openContactPicker()" autocomplete="off">
+        <div class="contact-picker-dropdown" id="rm_contactDropdown"></div>
+      </div>
+    </div>
     <!-- Photos -->
     <div class="modal-photos">
       <div class="modal-photos-label">Files &amp; Attachments</div>
@@ -1178,12 +1331,13 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 const S = {
   pin: '', user: '',
   tasks: [], inventory: [], reno: [], scratch: [], shortlist: [], design: [],
-  notifications: [], users: [],
+  contacts: [], notifications: [], users: [],
   settings: {}, actCounts: {},
   actFeeds: { task: [], inventory: [], reno: [] }
 };
 
 let currentShortlistId = null;
+let currentContactId   = null;
 let slFilter = { cat: 'All', status: 'All', room: 'All', query: '' };
 
 let currentTaskId = null;
@@ -1285,7 +1439,7 @@ async function api(method, url, body) {
 // LOAD ALL
 // ═══════════════════════════════════════════════════════════════
 async function loadAll() {
-  const [tr, ir, rr, sr, setr, acr, aft, afi, afr, slr, dr, ur] = await Promise.all([
+  const [tr, ir, rr, sr, setr, acr, aft, afi, afr, slr, dr, ur, cr] = await Promise.all([
     api('GET', '/api/tasks'),
     api('GET', '/api/inventory'),
     api('GET', '/api/reno'),
@@ -1297,7 +1451,8 @@ async function loadAll() {
     api('GET', '/api/activity/reno'),
     api('GET', '/api/shortlist'),
     api('GET', '/api/design'),
-    api('GET', '/api/users')
+    api('GET', '/api/users'),
+    api('GET', '/api/contacts')
   ]);
   S.tasks     = tr.tasks;
   S.inventory = ir.items;
@@ -1309,6 +1464,7 @@ async function loadAll() {
   S.actFeeds  = { task: aft.entries, inventory: afi.entries, reno: afr.entries };
   S.design    = dr.assets;
   S.users     = ur.users.map(u => u.name);
+  S.contacts  = cr.contacts;
   renderAll();
 }
 
@@ -1319,6 +1475,7 @@ function renderAll() {
   renderInventory();
   renderReno();
   renderShortlist();
+  renderContacts();
   renderScratch();
   renderSettings();
   renderActivityPanel('task');
@@ -1687,7 +1844,12 @@ function renderReno() {
       html += `<tr>
         <td style="color:var(--muted)">${escHtml(w.area)}</td>
         <td style="cursor:pointer;max-width:200px" onclick="openRenoModal('${w.id}')">${escHtml(w.description)}</td>
-        <td style="color:var(--muted)">${escHtml(w.tradesman)}</td>
+        <td style="color:var(--muted)">
+          ${escHtml(w.tradesman)}
+          ${(w._contacts && w._contacts.length) ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">${
+            w._contacts.map(c => `<span title="${escHtml(c.name)}${c.role?' · '+escHtml(c.role):''}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${escHtml(c.avatar_color||'#38bdf8')};color:#fff;font-size:0.62rem;font-weight:800;cursor:default">${contactInitials(c.name)}</span>`).join('')
+          }</div>` : ''}
+        </td>
         <td>
           <select class="status-sel" onchange="quickStatusReno('${w.id}', this.value)">
             ${['Not Started','In Progress','Done','Blocked'].map(s=>`<option${s===w.status?' selected':''}>${s}</option>`).join('')}
@@ -1720,12 +1882,17 @@ async function quickStatusReno(id, newStatus) {
   renderDashboard();
 }
 
+// Track contacts assigned to the currently-open reno work item
+let _renoAssignedContacts = []; // array of contact objects
+
 function openRenoModal(id) {
   currentRenoId = id || null;
   const isNew = !id;
   document.getElementById('renoModalTitle').textContent = isNew ? 'New Work Item' : 'Edit Work Item';
   document.getElementById('renoDelBtn').style.display = isNew ? 'none' : 'inline-block';
   document.getElementById('rm_actSection').style.display = isNew ? 'none' : 'block';
+  document.getElementById('rm_contactsSection').style.display = isNew ? 'none' : 'block';
+  _renoAssignedContacts = [];
 
   if (id) {
     const w = S.reno.find(x => x.id === id);
@@ -1741,6 +1908,7 @@ function openRenoModal(id) {
       document.getElementById('rm_notes').value  = w.notes;
     }
     loadModalActivity('reno', id, 'rm_actFeed');
+    loadRenoContacts(id);
   } else {
     ['rm_area','rm_desc','rm_trade','rm_start','rm_end','rm_notes'].forEach(f => document.getElementById(f).value = '');
     document.getElementById('rm_status').value = 'Not Started';
@@ -1749,6 +1917,90 @@ function openRenoModal(id) {
   }
   document.getElementById('renoModal').style.display = 'flex';
 }
+
+async function loadRenoContacts(renoId) {
+  try {
+    const r = await api('GET', `/api/reno-contacts/${renoId}`);
+    _renoAssignedContacts = r.contacts || [];
+  } catch(e) { _renoAssignedContacts = []; }
+  renderAssignedContacts();
+}
+
+function renderAssignedContacts() {
+  const list = document.getElementById('rm_assignedList');
+  if (!list) return;
+  if (!_renoAssignedContacts.length) {
+    list.innerHTML = `<div style="font-size:0.78rem;color:var(--muted)">No contacts assigned yet.</div>`;
+  } else {
+    list.innerHTML = _renoAssignedContacts.map(c => `
+      <div class="assigned-contact-chip">
+        <div class="assigned-chip-avatar" style="background:${escHtml(c.avatar_color||'#38bdf8')}">${contactInitials(c.name)}</div>
+        <div class="assigned-chip-info">
+          <div class="assigned-chip-name">${escHtml(c.name)}${c.company ? ` <span style="font-weight:400;color:var(--muted)">· ${escHtml(c.company)}</span>` : ''}</div>
+          <div class="assigned-chip-role">${escHtml(c.role||'—')}</div>
+        </div>
+        ${c.phone ? `<a href="tel:${escHtml(c.phone)}" style="font-size:0.8rem;color:var(--accent);text-decoration:none" title="${escHtml(c.phone)}">📞</a>` : ''}
+        <button class="assigned-chip-del" onclick="unassignRenoContact('${c.id}')" title="Remove">✕</button>
+      </div>`).join('');
+  }
+  // reset picker
+  const inp = document.getElementById('rm_contactSearch');
+  if (inp) inp.value = '';
+  closeContactPicker();
+}
+
+function openContactPicker() {
+  filterContactPicker(document.getElementById('rm_contactSearch')?.value || '');
+  document.getElementById('rm_contactDropdown').classList.add('open');
+}
+function closeContactPicker() {
+  const dd = document.getElementById('rm_contactDropdown');
+  if (dd) dd.classList.remove('open');
+}
+function filterContactPicker(q) {
+  const dd = document.getElementById('rm_contactDropdown');
+  if (!dd) return;
+  const lq = q.toLowerCase();
+  const assignedIds = new Set(_renoAssignedContacts.map(c => c.id));
+  const filtered = S.contacts.filter(c =>
+    !assignedIds.has(c.id) &&
+    (!lq || c.name.toLowerCase().includes(lq) || (c.company||'').toLowerCase().includes(lq) || (c.role||'').toLowerCase().includes(lq))
+  );
+  if (!filtered.length) {
+    dd.innerHTML = `<div class="contact-picker-option" style="color:var(--muted)">No matching contacts</div>`;
+  } else {
+    dd.innerHTML = filtered.map(c => `
+      <div class="contact-picker-option" onclick="assignRenoContact('${c.id}')">
+        <div class="assigned-chip-avatar" style="background:${escHtml(c.avatar_color||'#38bdf8')};width:26px;height:26px;font-size:0.7rem;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">${contactInitials(c.name)}</div>
+        <span>${escHtml(c.name)}${c.company ? ` <span style="color:var(--muted);font-size:0.72rem">· ${escHtml(c.company)}</span>` : ''}</span>
+        <span class="opt-role">${escHtml(c.role||'')}</span>
+      </div>`).join('');
+  }
+  dd.classList.add('open');
+}
+
+async function assignRenoContact(contactId) {
+  if (!currentRenoId) return;
+  await api('POST', '/api/reno-contacts', { reno_id: currentRenoId, contact_id: contactId });
+  const c = S.contacts.find(x => x.id === contactId);
+  if (c && !_renoAssignedContacts.find(x => x.id === contactId)) {
+    _renoAssignedContacts.push(c);
+  }
+  renderAssignedContacts();
+}
+
+async function unassignRenoContact(contactId) {
+  if (!currentRenoId) return;
+  await api('DELETE', `/api/reno-contacts/${currentRenoId}/${contactId}`);
+  _renoAssignedContacts = _renoAssignedContacts.filter(c => c.id !== contactId);
+  renderAssignedContacts();
+}
+
+// Close picker when clicking outside
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('rm_contactPickerWrap');
+  if (wrap && !wrap.contains(e.target)) closeContactPicker();
+});
 
 async function saveReno() {
   const area = document.getElementById('rm_area').value.trim();
@@ -1788,6 +2040,144 @@ async function deleteReno() {
   closeModal('renoModal');
   renderReno(); renderDashboard();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// CONTACTS
+// ═══════════════════════════════════════════════════════════════
+const CONTACT_COLORS = [
+  '#38bdf8','#818cf8','#34d399','#fb923c',
+  '#f472b6','#a78bfa','#22d3ee','#4ade80',
+  '#f59e0b','#ef4444','#7C3AED','#2E75B6'
+];
+
+function contactInitials(name) {
+  const parts = (name || '?').trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function renderContacts() {
+  const grid = document.getElementById('contactsGrid');
+  if (!grid) return;
+  if (!S.contacts.length) {
+    grid.innerHTML = `<div style="color:var(--muted);font-size:0.88rem;grid-column:1/-1;padding:20px 0">
+      No contacts yet. Click <strong>+ Add Contact</strong> to add your first contractor or supplier.
+    </div>`;
+    return;
+  }
+  grid.innerHTML = S.contacts.map(c => {
+    const initials = contactInitials(c.name);
+    const phone = c.phone ? `<div class="contact-detail-row">📞 <a href="tel:${escHtml(c.phone)}">${escHtml(c.phone)}</a></div>` : '';
+    const email = c.email ? `<div class="contact-detail-row">✉️ <a href="mailto:${escHtml(c.email)}">${escHtml(c.email)}</a></div>` : '';
+    const notes = c.notes ? `<div class="contact-notes-row">${escHtml(c.notes)}</div>` : '';
+    const role  = c.role  ? `<div class="contact-role-badge">${escHtml(c.role)}</div>` : '';
+    return `<div class="contact-card" onclick="openContactModal('${c.id}')">
+      <div class="contact-card-top">
+        <div class="contact-avatar" style="background:${escHtml(c.avatar_color||'#38bdf8')}">${initials}</div>
+        <div>
+          <div class="contact-name">${escHtml(c.name)}</div>
+          <div class="contact-company">${escHtml(c.company||'')}</div>
+        </div>
+      </div>
+      ${role}
+      ${phone}${email}
+      ${notes}
+    </div>`;
+  }).join('');
+}
+
+function openContactModal(id) {
+  currentContactId = id || null;
+  const isNew = !id;
+  document.getElementById('contactModalTitle').textContent = isNew ? 'New Contact' : 'Edit Contact';
+  document.getElementById('contactDelBtn').style.display = isNew ? 'none' : 'inline-block';
+
+  // Build colour swatches
+  const swatchEl = document.getElementById('cm_swatches');
+  let pickedColor = isNew ? CONTACT_COLORS[0] : '';
+  if (!isNew) {
+    const c = S.contacts.find(x => x.id === id);
+    if (c) {
+      document.getElementById('cm_name').value    = c.name;
+      document.getElementById('cm_company').value = c.company;
+      document.getElementById('cm_role').value    = c.role;
+      document.getElementById('cm_phone').value   = c.phone;
+      document.getElementById('cm_email').value   = c.email;
+      document.getElementById('cm_notes').value   = c.notes;
+      pickedColor = c.avatar_color || CONTACT_COLORS[0];
+    }
+  } else {
+    ['cm_name','cm_company','cm_role','cm_phone','cm_email','cm_notes'].forEach(f => {
+      document.getElementById(f).value = '';
+    });
+  }
+
+  swatchEl.innerHTML = CONTACT_COLORS.map(col =>
+    `<div class="color-swatch${col === pickedColor ? ' selected' : ''}"
+          style="background:${col}" data-color="${col}"
+          onclick="pickContactColor('${col}')"></div>`
+  ).join('');
+  updateContactAvatarPreview(pickedColor, document.getElementById('cm_name').value);
+
+  document.getElementById('contactModal').style.display = 'flex';
+}
+
+function pickContactColor(color) {
+  document.querySelectorAll('.color-swatch').forEach(s =>
+    s.classList.toggle('selected', s.dataset.color === color)
+  );
+  updateContactAvatarPreview(color, document.getElementById('cm_name').value);
+}
+
+function updateContactAvatarPreview(color, name) {
+  const el = document.getElementById('cm_avatarPreview');
+  if (!el) return;
+  el.style.background = color;
+  el.textContent = contactInitials(name || '?');
+}
+
+async function saveContact() {
+  const name = document.getElementById('cm_name').value.trim();
+  if (!name) { alert('Name is required'); return; }
+  const color = document.querySelector('.color-swatch.selected')?.dataset.color || CONTACT_COLORS[0];
+  const body = {
+    name,
+    company:      document.getElementById('cm_company').value.trim(),
+    role:         document.getElementById('cm_role').value.trim(),
+    phone:        document.getElementById('cm_phone').value.trim(),
+    email:        document.getElementById('cm_email').value.trim(),
+    notes:        document.getElementById('cm_notes').value.trim(),
+    avatar_color: color
+  };
+  if (currentContactId) {
+    const r = await api('PUT', `/api/contacts/${currentContactId}`, body);
+    const idx = S.contacts.findIndex(x => x.id === currentContactId);
+    if (idx >= 0) S.contacts[idx] = r.contact;
+  } else {
+    const r = await api('POST', '/api/contacts', body);
+    S.contacts.push(r.contact);
+    S.contacts.sort((a,b) => a.name.localeCompare(b.name));
+  }
+  closeModal('contactModal');
+  renderContacts();
+}
+
+async function deleteContact() {
+  if (!confirm('Delete this contact? They will also be removed from any assigned renovation works.')) return;
+  await api('DELETE', `/api/contacts/${currentContactId}`);
+  S.contacts = S.contacts.filter(x => x.id !== currentContactId);
+  closeModal('contactModal');
+  renderContacts();
+}
+
+// Live-update avatar preview as name is typed
+document.addEventListener('DOMContentLoaded', () => {
+  const nameInput = document.getElementById('cm_name');
+  if (nameInput) nameInput.addEventListener('input', () => {
+    const color = document.querySelector('.color-swatch.selected')?.dataset.color || CONTACT_COLORS[0];
+    updateContactAvatarPreview(color, nameInput.value);
+  });
+});
 
 // ═══════════════════════════════════════════════════════════════
 // SHORTLIST

@@ -132,6 +132,12 @@ app.delete('/api/inventory/:id', auth, (req, res) => {
 // ─── Renovation Works ─────────────────────────────────────────────────────────
 app.get('/api/reno', auth, (req, res) => {
   const works = db.prepare('SELECT * FROM reno_works ORDER BY area, created_at').all();
+  // Attach assigned contact names to each work item (for table display)
+  const contactQ = db.prepare(
+    `SELECT c.id, c.name, c.role, c.avatar_color FROM contacts c
+     JOIN reno_contacts rc ON rc.contact_id = c.id WHERE rc.reno_id = ?`
+  );
+  works.forEach(w => { w._contacts = contactQ.all(w.id); });
   res.json({ works });
 });
 
@@ -465,6 +471,64 @@ app.delete('/api/design/:id', auth, (req, res) => {
     }
     db.prepare('DELETE FROM design_assets WHERE id=?').run(req.params.id);
   }
+  res.json({ ok: true });
+});
+
+// ─── Contacts ─────────────────────────────────────────────────────────────────
+app.get('/api/contacts', auth, (req, res) => {
+  const contacts = db.prepare('SELECT * FROM contacts ORDER BY name COLLATE NOCASE').all();
+  res.json({ contacts });
+});
+
+app.post('/api/contacts', auth, (req, res) => {
+  const { name, company, role, phone, email, notes, avatar_color } = req.body;
+  if (!name) return res.status(400).json({ error: 'name required' });
+  const id = uid();
+  db.prepare(
+    `INSERT INTO contacts (id, name, company, role, phone, email, notes, avatar_color)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, name, company||'', role||'', phone||'', email||'', notes||'', avatar_color||'#38bdf8');
+  res.json({ contact: db.prepare('SELECT * FROM contacts WHERE id=?').get(id) });
+});
+
+app.put('/api/contacts/:id', auth, (req, res) => {
+  const allowed = ['name','company','role','phone','email','notes','avatar_color'];
+  const fields = {};
+  for (const k of allowed) { if (req.body[k] !== undefined) fields[k] = req.body[k]; }
+  if (!Object.keys(fields).length) return res.status(400).json({ error: 'no fields' });
+  const sets = Object.keys(fields).map(k => `${k}=?`).join(',');
+  db.prepare(`UPDATE contacts SET ${sets} WHERE id=?`).run(...Object.values(fields), req.params.id);
+  res.json({ contact: db.prepare('SELECT * FROM contacts WHERE id=?').get(req.params.id) });
+});
+
+app.delete('/api/contacts/:id', auth, (req, res) => {
+  db.prepare('DELETE FROM reno_contacts WHERE contact_id=?').run(req.params.id);
+  db.prepare('DELETE FROM contacts WHERE id=?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// Reno ↔ Contact assignments
+app.get('/api/reno-contacts/:renoId', auth, (req, res) => {
+  const rows = db.prepare(
+    `SELECT c.* FROM contacts c
+     JOIN reno_contacts rc ON rc.contact_id = c.id
+     WHERE rc.reno_id = ? ORDER BY c.name COLLATE NOCASE`
+  ).all(req.params.renoId);
+  res.json({ contacts: rows });
+});
+
+app.post('/api/reno-contacts', auth, (req, res) => {
+  const { reno_id, contact_id } = req.body;
+  if (!reno_id || !contact_id) return res.status(400).json({ error: 'reno_id and contact_id required' });
+  const id = uid();
+  try {
+    db.prepare('INSERT INTO reno_contacts (id, reno_id, contact_id) VALUES (?, ?, ?)').run(id, reno_id, contact_id);
+  } catch(e) { /* already assigned — ignore UNIQUE conflict */ }
+  res.json({ ok: true });
+});
+
+app.delete('/api/reno-contacts/:renoId/:contactId', auth, (req, res) => {
+  db.prepare('DELETE FROM reno_contacts WHERE reno_id=? AND contact_id=?').run(req.params.renoId, req.params.contactId);
   res.json({ ok: true });
 });
 

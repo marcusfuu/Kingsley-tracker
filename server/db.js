@@ -134,6 +134,25 @@ db.exec(`
     protected INTEGER DEFAULT 0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS contacts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    company TEXT DEFAULT '',
+    role TEXT DEFAULT '',
+    phone TEXT DEFAULT '',
+    email TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    avatar_color TEXT DEFAULT '#38bdf8',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS reno_contacts (
+    id TEXT PRIMARY KEY,
+    reno_id TEXT NOT NULL,
+    contact_id TEXT NOT NULL,
+    UNIQUE(reno_id, contact_id)
+  );
 `);
 
 // Add url column to attachments (safe to run on existing DBs — fails silently if already exists)

@@ -125,7 +125,8 @@ app.post('/api/inventory', auth, (req, res) => {
 });
 
 app.put('/api/inventory/:id', auth, (req, res) => {
-  const allowed = ['category','name','qty','unit','unit_price','supplier','status','notes'];
+  const allowed = ['category','name','qty','unit','unit_price','supplier','status','notes',
+                   'in_power_planner','wattage','floor','phase','daily_run_hours'];
   const fields = {};
   allowed.forEach(f => { if (req.body[f] !== undefined) fields[f] = req.body[f]; });
   if (!Object.keys(fields).length) return res.status(400).json({ error: 'No fields' });
@@ -434,6 +435,30 @@ app.delete('/api/activity/:id', auth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Changelog (global activity feed with entity names) ───────────────────────
+app.get('/api/changelog', auth, (req, res) => {
+  const limit  = Math.min(parseInt(req.query.limit) || 50, 200);
+  const offset = parseInt(req.query.offset) || 0;
+  const entries = db.prepare(`
+    SELECT
+      a.id, a.entity_type, a.entity_id, a.author, a.text, a.timestamp,
+      COALESCE(
+        CASE WHEN a.entity_type='task'      THEN t.name  END,
+        CASE WHEN a.entity_type='inventory' THEN i.name  END,
+        CASE WHEN a.entity_type='reno'      THEN r.area  END,
+        '—'
+      ) AS entity_name
+    FROM activity_log a
+    LEFT JOIN tasks     t ON a.entity_type='task'      AND a.entity_id=t.id
+    LEFT JOIN inventory i ON a.entity_type='inventory' AND a.entity_id=i.id
+    LEFT JOIN reno_works r ON a.entity_type='reno'     AND a.entity_id=r.id
+    ORDER BY a.timestamp DESC
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+  const total = db.prepare('SELECT COUNT(*) as n FROM activity_log').get().n;
+  res.json({ entries, total });
+});
+
 // ─── Design Assets ────────────────────────────────────────────────────────────
 app.get('/api/design', auth, (req, res) => {
   const assets = db.prepare('SELECT * FROM design_assets ORDER BY created_at DESC').all();
@@ -603,6 +628,45 @@ app.post('/api/task-reno-links', auth, (req, res) => {
 app.delete('/api/task-reno-links/:taskId/:renoId', auth, (req, res) => {
   db.prepare('DELETE FROM task_reno_links WHERE task_id=? AND reno_id=?').run(req.params.taskId, req.params.renoId);
   res.json({ ok: true });
+});
+
+// ─── Solar Config ─────────────────────────────────────────────────────────────
+app.get('/api/solar-config', auth, (req, res) => {
+  const cfg = db.prepare('SELECT * FROM solar_config WHERE id=1').get();
+  res.json({ config: cfg || {} });
+});
+
+app.post('/api/solar-config', auth, (req, res) => {
+  const { system_capacity_kw, panel_count, panel_wattage, estimated_daily_kwh, peak_sun_hours, default_run_hours, notes, max_l1_kw, max_l2_kw, max_l3_kw } = req.body;
+  db.prepare(`
+    INSERT INTO solar_config (id, system_capacity_kw, panel_count, panel_wattage, estimated_daily_kwh, peak_sun_hours, default_run_hours, notes, max_l1_kw, max_l2_kw, max_l3_kw, updated_at)
+    VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+    ON CONFLICT(id) DO UPDATE SET
+      system_capacity_kw  = excluded.system_capacity_kw,
+      panel_count         = excluded.panel_count,
+      panel_wattage       = excluded.panel_wattage,
+      estimated_daily_kwh = excluded.estimated_daily_kwh,
+      peak_sun_hours      = excluded.peak_sun_hours,
+      default_run_hours   = excluded.default_run_hours,
+      notes               = excluded.notes,
+      max_l1_kw           = excluded.max_l1_kw,
+      max_l2_kw           = excluded.max_l2_kw,
+      max_l3_kw           = excluded.max_l3_kw,
+      updated_at          = excluded.updated_at
+  `).run(
+    system_capacity_kw||0, panel_count||0, panel_wattage||0,
+    estimated_daily_kwh||0, peak_sun_hours||5.0, default_run_hours||8.0,
+    notes||'', max_l1_kw||0, max_l2_kw||0, max_l3_kw||0
+  );
+  res.json({ config: db.prepare('SELECT * FROM solar_config WHERE id=1').get() });
+});
+
+// ─── Power Planner Items ───────────────────────────────────────────────────────
+app.get('/api/power-planner/items', auth, (req, res) => {
+  const items = db.prepare(
+    'SELECT * FROM inventory WHERE in_power_planner=1 ORDER BY floor, name'
+  ).all();
+  res.json({ items });
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────

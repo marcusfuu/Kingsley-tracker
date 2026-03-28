@@ -173,6 +173,33 @@ db.exec(`
 try { db.exec('ALTER TABLE attachments ADD COLUMN url TEXT DEFAULT NULL'); } catch(e) {}
 // Link shortlist items to confirmed inventory entries
 try { db.exec('ALTER TABLE shortlist ADD COLUMN inventory_id TEXT DEFAULT NULL'); } catch(e) {}
+// Power Planner columns on inventory
+try { db.exec('ALTER TABLE inventory ADD COLUMN in_power_planner INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE inventory ADD COLUMN wattage INTEGER DEFAULT NULL'); } catch(e) {}
+try { db.exec('ALTER TABLE inventory ADD COLUMN floor TEXT DEFAULT NULL'); } catch(e) {}
+try { db.exec('ALTER TABLE inventory ADD COLUMN phase TEXT DEFAULT \'unassigned\''); } catch(e) {}
+try { db.exec('ALTER TABLE inventory ADD COLUMN daily_run_hours REAL DEFAULT 8.0'); } catch(e) {}
+// Per-phase budget (house 3-phase supply allocation)
+try { db.exec('ALTER TABLE solar_config ADD COLUMN max_l1_kw REAL DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE solar_config ADD COLUMN max_l2_kw REAL DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE solar_config ADD COLUMN max_l3_kw REAL DEFAULT 0'); } catch(e) {}
+
+// Solar config (single-row settings table)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS solar_config (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    system_capacity_kw REAL DEFAULT 0,
+    panel_count INTEGER DEFAULT 0,
+    panel_wattage INTEGER DEFAULT 0,
+    estimated_daily_kwh REAL DEFAULT 0,
+    peak_sun_hours REAL DEFAULT 5.0,
+    default_run_hours REAL DEFAULT 8.0,
+    notes TEXT DEFAULT '',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+// Ensure row 1 exists
+db.prepare('INSERT OR IGNORE INTO solar_config (id) VALUES (1)').run();
 
 // Seed default users (Marcus is protected — cannot be deleted)
 const insertUser = db.prepare('INSERT OR IGNORE INTO users (name, protected) VALUES (?, ?)');

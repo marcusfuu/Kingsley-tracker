@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kingsley Hills SL-05b</title>
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -23,7 +24,7 @@
   --accent: #38bdf8;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow: hidden; }
 
 /* ── Login ── */
 #loginScreen {
@@ -86,11 +87,93 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
 
 /* ── App shell ── */
 #app { display: none; }
-header {
-  background: var(--card); border-bottom: 1px solid var(--border);
-  padding: 12px 24px; display: flex; align-items: center; gap: 16px;
+/* ── App layout: sidebar + main ── */
+#app { display: flex; height: 100vh; overflow: hidden; }
+
+/* Sidebar */
+#sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--card); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transition: width 0.2s ease;
+  overflow: hidden; position: relative; z-index: 100;
 }
-header h1 { font-size: 1.05rem; font-weight: 700; flex: 1; }
+#sidebar.collapsed { width: 60px; }
+
+.sidebar-brand {
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  min-height: 60px; overflow: hidden;
+}
+.sidebar-brand-icon { font-size: 1.3rem; flex-shrink: 0; }
+.sidebar-brand-text {
+  font-size: 0.82rem; font-weight: 700; line-height: 1.2;
+  white-space: nowrap; overflow: hidden;
+  transition: opacity 0.15s;
+}
+#sidebar.collapsed .sidebar-brand-text { opacity: 0; pointer-events: none; }
+
+.sidebar-toggle {
+  position: absolute; top: 18px; right: 10px;
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 1rem; padding: 2px 4px;
+  transition: color 0.15s; line-height: 1;
+}
+.sidebar-toggle:hover { color: var(--accent); }
+#sidebar.collapsed .sidebar-toggle { right: 50%; transform: translateX(50%); }
+
+.sidebar-nav {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 8px 0;
+}
+.sidebar-nav::-webkit-scrollbar { width: 3px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.nav-group-label {
+  font-size: 0.62rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 10px 16px 4px; white-space: nowrap; overflow: hidden;
+  transition: opacity 0.15s;
+}
+#sidebar.collapsed .nav-group-label { opacity: 0; }
+
+.nav-btn {
+  display: flex; align-items: center; gap: 11px;
+  width: 100%; padding: 9px 16px;
+  border: none; background: none; color: var(--muted);
+  cursor: pointer; font-size: 0.85rem; font-weight: 500;
+  text-align: left; white-space: nowrap; overflow: hidden;
+  transition: background 0.12s, color 0.12s;
+  border-radius: 0;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.nav-btn.active { background: rgba(56,189,248,0.15); color: var(--accent); font-weight: 600; }
+.nav-btn-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
+.nav-btn-label { flex: 1; transition: opacity 0.15s; }
+#sidebar.collapsed .nav-btn-label { opacity: 0; pointer-events: none; }
+#sidebar.collapsed .nav-btn { justify-content: center; padding: 9px 0; }
+
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+  overflow: hidden;
+}
+.sidebar-user-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.sidebar-user-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.sidebar-user-name {
+  font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden;
+  flex: 1; transition: opacity 0.15s;
+}
+#sidebar.collapsed .sidebar-user-name,
+#sidebar.collapsed .sidebar-footer-btns { opacity: 0; pointer-events: none; }
+#sidebar.collapsed .sidebar-footer { padding: 10px 0; align-items: center; }
+.sidebar-footer-btns { display: flex; gap: 6px; transition: opacity 0.15s; }
+
 .user-pill {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
@@ -100,22 +183,48 @@ header h1 { font-size: 1.05rem; font-weight: 700; flex: 1; }
 .dot { width: 8px; height: 8px; border-radius: 50%; }
 .user-pill.marcus .dot { background: var(--marcus); }
 .user-pill.lucas  .dot { background: var(--lucas); }
-.btn-logout { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+.btn-logout {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; width: 100%;
+}
 .btn-logout:hover { border-color: var(--red); color: var(--red); }
 
-nav {
-  display: flex; gap: 4px; padding: 12px 24px;
+/* Main content area */
+.main-wrap {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column;
+}
+.main-topbar {
   background: var(--card); border-bottom: 1px solid var(--border);
+  padding: 10px 20px; display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0; min-height: 48px;
 }
-.nav-btn {
-  padding: 8px 16px; border: none; background: none; color: var(--muted);
-  cursor: pointer; border-radius: 6px; font-size: 0.88rem; font-weight: 500;
-}
-.nav-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
-.nav-btn.active { background: rgba(56,189,248,0.15); color: var(--accent); font-weight: 600; }
+.main-topbar h1 { font-size: 0.95rem; font-weight: 700; flex: 1; color: var(--muted); }
+.pages-wrap { flex: 1; overflow-y: auto; }
 
 .page { display: none; padding: 24px; max-width: 1400px; margin: 0 auto; }
 .page.active { display: block; }
+
+/* Mobile sidebar overlay */
+@media (max-width: 768px) {
+  #sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    transform: translateX(-100%); transition: transform 0.25s ease, width 0.2s ease;
+    z-index: 200;
+  }
+  #sidebar.mobile-open { transform: translateX(0); }
+  #sidebar-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 199;
+  }
+  #sidebar.mobile-open ~ #sidebar-overlay { display: block; }
+  .main-wrap { width: 100%; }
+  .hamburger { display: flex !important; }
+}
+.hamburger {
+  display: none; background: none; border: none;
+  color: var(--muted); font-size: 1.3rem; cursor: pointer; padding: 4px 8px;
+}
 
 /* ── Cards / tables ── */
 .section-header {
@@ -315,6 +424,51 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 .wn-author.lucas  { color: var(--lucas); }
 .wn-author.system { color: var(--muted); }
 .whats-new-empty { font-size: 0.82rem; color: var(--muted); font-style: italic; padding-top: 8px; }
+/* ── Changelog ── */
+.changelog-wrap {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; margin-top: 24px; overflow: hidden;
+}
+.changelog-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid var(--border);
+}
+.changelog-header:hover { background: rgba(255,255,255,0.02); }
+.changelog-title { font-weight: 700; font-size: 0.95rem; flex: 1; }
+.changelog-count { font-size: 0.75rem; color: var(--muted); background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 10px; }
+.changelog-chevron { color: var(--muted); font-size: 0.72rem; transition: transform 0.2s; }
+.changelog-header.open .changelog-chevron { transform: rotate(180deg); }
+.changelog-body { display: none; }
+.changelog-body.open { display: block; }
+.changelog-date-group { padding: 8px 20px 0; }
+.changelog-date-label {
+  font-size: 0.7rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 10px 0 4px; border-bottom: 1px solid var(--border); margin-bottom: 2px;
+}
+.changelog-entry {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.81rem; line-height: 1.5;
+}
+.changelog-entry:last-child { border-bottom: none; }
+.changelog-entry-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 1px; width: 18px; text-align: center; }
+.changelog-entry-body { flex: 1; min-width: 0; }
+.changelog-entity { font-weight: 600; color: var(--text); cursor: pointer; }
+.changelog-entity:hover { color: var(--accent); text-decoration: underline; }
+.changelog-text { color: var(--muted); }
+.changelog-meta { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+.changelog-time { color: rgba(255,255,255,0.28); }
+.changelog-load-more {
+  text-align: center; padding: 12px;
+  border-top: 1px solid var(--border);
+}
+.changelog-load-more button {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 6px; padding: 5px 18px; font-size: 0.8rem; cursor: pointer;
+}
+.changelog-load-more button:hover { border-color: var(--accent); color: var(--accent); }
 /* ── Page guide banners ── */
 .page-guide { background: rgba(56,189,248,0.04); border: 1px solid rgba(56,189,248,0.12); border-radius: 8px; padding: 10px 16px; font-size: 0.79rem; color: var(--muted); margin-bottom: 18px; line-height: 1.7; }
 .page-guide strong { color: var(--text); font-weight: 600; }
@@ -639,8 +793,6 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 
 @media (max-width: 700px) {
   .page { padding: 12px; }
-  header { padding: 10px 14px; }
-  nav { padding: 8px 14px; overflow-x: auto; }
   .modal { padding: 18px; }
   .user-cards { flex-direction: column; }
 }
@@ -792,6 +944,132 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 }
 .color-swatch:hover { transform: scale(1.15); }
 .color-swatch.selected { border-color: #fff; }
+
+/* ══════════════════════════════════════════════════════════════
+   POWER PLANNER
+══════════════════════════════════════════════════════════════ */
+.pp-wrap { display: flex; flex-direction: column; gap: 16px; }
+
+/* Solar config panel */
+.pp-solar-panel {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.pp-solar-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; cursor: pointer; user-select: none;
+  font-weight: 600; font-size: 0.88rem;
+}
+.pp-solar-header:hover { background: rgba(255,255,255,0.03); }
+.pp-solar-chevron { margin-left: auto; transition: transform 0.2s; font-size: 0.75rem; color: var(--muted); }
+.pp-solar-header.open .pp-solar-chevron { transform: rotate(180deg); }
+.pp-solar-body {
+  display: none; padding: 0 16px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0 16px;
+}
+.pp-solar-body.open { display: grid; }
+.pp-solar-save { margin-top: 4px; grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
+.pp-solar-summary {
+  grid-column: 1 / -1; padding: 10px 12px; border-radius: 7px;
+  background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.15);
+  font-size: 0.82rem; color: var(--muted); display: flex; gap: 20px; flex-wrap: wrap;
+}
+.pp-solar-summary strong { color: var(--text); }
+
+/* Phase balance bar */
+.pp-balance-wrap {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+}
+.pp-balance-title { font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.pp-balance-bars { display: flex; gap: 12px; flex-wrap: wrap; }
+.pp-phase-bar-col { flex: 1; min-width: 120px; }
+.pp-phase-label {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 0.78rem; font-weight: 600; margin-bottom: 4px;
+}
+.pp-phase-label .pp-phase-kw { font-size: 0.72rem; font-weight: 400; color: var(--muted); }
+.pp-bar-track {
+  height: 8px; border-radius: 4px; background: rgba(255,255,255,0.07); overflow: hidden;
+}
+.pp-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+.pp-bar-fill.l1 { background: #3b82f6; }
+.pp-bar-fill.l2 { background: #f59e0b; }
+.pp-bar-fill.l3 { background: #ef4444; }
+.pp-bar-fill.unassigned { background: #6b7280; }
+.pp-balance-total { margin-top: 10px; font-size: 0.8rem; color: var(--muted); }
+.pp-solar-offset { display: inline-block; margin-left: 12px; color: #34d399; font-weight: 600; }
+
+/* Load board */
+.pp-board { display: flex; flex-direction: column; gap: 14px; }
+.pp-floor-accordion {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.pp-floor-header {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  cursor: pointer; user-select: none; font-weight: 600; font-size: 0.88rem;
+}
+.pp-floor-header:hover { background: rgba(255,255,255,0.03); }
+.pp-floor-chevron { margin-left: auto; transition: transform 0.2s; font-size: 0.75rem; color: var(--muted); }
+.pp-floor-header.open .pp-floor-chevron { transform: rotate(180deg); }
+.pp-floor-body { display: none; }
+.pp-floor-body.open { display: block; padding: 0 16px 16px; }
+.pp-floor-stats { font-size: 0.78rem; color: var(--muted); margin-left: 6px; font-weight: 400; }
+.pp-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.pp-col-header {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.73rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 6px 8px; border-radius: 5px 5px 0 0; margin-bottom: 4px;
+}
+.pp-col-header.l1 { color: #3b82f6; background: rgba(59,130,246,0.08); }
+.pp-col-header.l2 { color: #f59e0b; background: rgba(245,158,11,0.08); }
+.pp-col-header.l3 { color: #ef4444; background: rgba(239,68,68,0.08); }
+.pp-col-header.unassigned { color: var(--muted); background: rgba(107,114,128,0.08); }
+.pp-col-kw { font-size: 0.68rem; font-weight: 400; margin-left: auto; }
+.pp-drop-zone {
+  min-height: 60px; border: 1.5px dashed rgba(255,255,255,0.08);
+  border-radius: 6px; padding: 4px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.pp-drop-zone.sortable-over { border-color: var(--accent); background: rgba(56,189,248,0.04); }
+
+/* Load card */
+.pp-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 7px; padding: 8px 10px;
+  cursor: grab; transition: box-shadow 0.15s, opacity 0.15s;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.pp-card:active { cursor: grabbing; }
+.pp-card.sortable-ghost { opacity: 0.35; }
+.pp-card.sortable-drag { box-shadow: 0 6px 20px rgba(0,0,0,0.5); opacity: 0.9; }
+.pp-card-name { font-size: 0.8rem; font-weight: 500; line-height: 1.3; }
+.pp-card-meta { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--muted); }
+.pp-card-watts { font-weight: 600; color: var(--text); }
+.pp-card-kwh { color: #34d399; }
+.pp-card-edit { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 0.75rem; }
+.pp-card-edit:hover { color: var(--accent); }
+
+/* Phase dot */
+.pp-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block;
+}
+.pp-dot.l1 { background: #3b82f6; }
+.pp-dot.l2 { background: #f59e0b; }
+.pp-dot.l3 { background: #ef4444; }
+.pp-dot.unassigned { background: #6b7280; }
+
+/* Edit card modal */
+.pp-edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+
+/* Mobile: show phase select instead of drag */
+@media (pointer: coarse) {
+  .pp-columns { grid-template-columns: 1fr; }
+  .pp-card { cursor: default; }
+  .pp-card-phase-sel { display: inline-block !important; }
+}
+.pp-card-phase-sel { display: none; }
 </style>
 </head>
 <body>
@@ -814,41 +1092,98 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
 
 <!-- ═══════════════ APP ═══════════════ -->
 <div id="app">
-  <header>
-    <h1>🏠 Kingsley Hills SL-05b</h1>
-    <div id="userPill" class="user-pill"></div>
-    <div class="notif-wrap" id="notifWrap">
-      <button class="notif-bell" onclick="toggleNotifPanel(event)" title="Notifications">
-        🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
+
+  <!-- ── Sidebar ── -->
+  <aside id="sidebar">
+    <div class="sidebar-brand">
+      <span class="sidebar-brand-icon">🏠</span>
+      <span class="sidebar-brand-text">Kingsley Hills<br><span style="font-weight:400;color:var(--muted);font-size:0.72rem">SL-05b</span></span>
+      <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse">‹</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Overview</div>
+      <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard')">
+        <span class="nav-btn-icon">📊</span><span class="nav-btn-label">Dashboard</span>
       </button>
-      <div class="notif-panel" id="notifPanel">
-        <div class="notif-panel-header">
-          <span>Notifications</span>
-          <button onclick="markAllNotifsRead()">Mark all read</button>
+      <button class="nav-btn" data-page="tasks" onclick="showPage('tasks')">
+        <span class="nav-btn-icon">📋</span><span class="nav-btn-label">Action Plan</span>
+      </button>
+
+      <div class="nav-group-label">Property</div>
+      <button class="nav-btn" data-page="design" onclick="showPage('design')">
+        <span class="nav-btn-icon">🎨</span><span class="nav-btn-label">Home Design</span>
+      </button>
+      <button class="nav-btn" data-page="inventory" onclick="showPage('inventory')">
+        <span class="nav-btn-icon">📦</span><span class="nav-btn-label">Inventory</span>
+      </button>
+      <button class="nav-btn" data-page="power" onclick="showPage('power')">
+        <span class="nav-btn-icon">⚡</span><span class="nav-btn-label">Power Planner</span>
+      </button>
+      <button class="nav-btn" data-page="reno" onclick="showPage('reno')">
+        <span class="nav-btn-icon">🔨</span><span class="nav-btn-label">Renovation</span>
+      </button>
+      <button class="nav-btn" data-page="shortlist" onclick="showPage('shortlist')">
+        <span class="nav-btn-icon">🛒</span><span class="nav-btn-label">Shortlist</span>
+      </button>
+
+      <div class="nav-group-label">People</div>
+      <button class="nav-btn" data-page="contacts" onclick="showPage('contacts')">
+        <span class="nav-btn-icon">👥</span><span class="nav-btn-label">Contacts</span>
+      </button>
+
+      <div class="nav-group-label">Tools</div>
+      <button class="nav-btn" data-page="scratchpad" onclick="showPage('scratchpad')">
+        <span class="nav-btn-icon">📝</span><span class="nav-btn-label">Scratchpad</span>
+      </button>
+      <button class="nav-btn" data-page="settings" onclick="showPage('settings')">
+        <span class="nav-btn-icon">⚙️</span><span class="nav-btn-label">Settings</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user-row">
+        <div class="sidebar-user-dot" id="sidebarUserDot"></div>
+        <span class="sidebar-user-name" id="sidebarUserName"></span>
+        <div class="notif-wrap" id="notifWrap" style="position:relative">
+          <button class="notif-bell" onclick="toggleNotifPanel(event)" title="Notifications" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--muted)">
+            🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
+          </button>
+          <div class="notif-panel" id="notifPanel" style="bottom:100%;top:auto;left:0;right:auto;min-width:280px">
+            <div class="notif-panel-header">
+              <span>Notifications</span>
+              <button onclick="markAllNotifsRead()">Mark all read</button>
+            </div>
+            <div class="notif-list" id="notifList"></div>
+          </div>
         </div>
-        <div class="notif-list" id="notifList"></div>
+      </div>
+      <div class="sidebar-footer-btns">
+        <button class="btn-logout" onclick="logout()">Sign Out</button>
       </div>
     </div>
-    <button class="btn-logout" onclick="logout()">Sign Out</button>
-  </header>
-  <div class="notif-toast" id="notifToast" style="display:none">
-    <div class="notif-toast-body">
-      <div class="notif-toast-title" id="notifToastTitle">New mention</div>
-      <div class="notif-toast-text" id="notifToastText"></div>
+  </aside>
+
+  <!-- Mobile overlay backdrop -->
+  <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ── Main content ── -->
+  <div class="main-wrap">
+    <div class="main-topbar">
+      <button class="hamburger" onclick="toggleSidebar()" title="Menu">☰</button>
+      <h1 id="topbarTitle">Dashboard</h1>
+      <div id="userPill" class="user-pill" style="display:none"></div><!-- kept for JS compat -->
     </div>
-    <button class="notif-toast-close" onclick="dismissToast()">✕</button>
-  </div>
-  <nav>
-    <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
-    <button class="nav-btn" onclick="showPage('design')">Home Design</button>
-    <button class="nav-btn" onclick="showPage('tasks')">Action Plan</button>
-    <button class="nav-btn" onclick="showPage('inventory')">Inventory</button>
-    <button class="nav-btn" onclick="showPage('reno')">Renovation</button>
-    <button class="nav-btn" onclick="showPage('shortlist')">Shortlist</button>
-    <button class="nav-btn" onclick="showPage('contacts')">Contacts</button>
-    <button class="nav-btn" onclick="showPage('scratchpad')">Scratchpad</button>
-    <button class="nav-btn" onclick="showPage('settings')">Settings</button>
-  </nav>
+
+    <div class="notif-toast" id="notifToast" style="display:none">
+      <div class="notif-toast-body">
+        <div class="notif-toast-title" id="notifToastTitle">New mention</div>
+        <div class="notif-toast-text" id="notifToastText"></div>
+      </div>
+      <button class="notif-toast-close" onclick="dismissToast()">✕</button>
+    </div>
+
+    <div class="pages-wrap">
 
   <!-- Home Design -->
   <div class="page" id="page-design">
@@ -942,6 +1277,7 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <div id="dashWelcome"></div>
     <div class="dash-grid" id="dashKPIs"></div>
     <div id="dashPhases"></div>
+    <div id="dashChangelog"></div>
   </div>
 
   <!-- Action Plan -->
@@ -1104,6 +1440,65 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
     <div id="contactsGrid" class="contacts-grid"></div>
   </div>
 
+  <!-- Power Planner -->
+  <div class="page" id="page-power">
+    <div class="pp-wrap">
+
+      <!-- Solar Config panel -->
+      <div class="pp-solar-panel">
+        <div class="pp-solar-header" id="ppSolarHeader" onclick="togglePPSolar()">
+          <span>☀️</span> <span>Solar System Configuration</span>
+          <span class="pp-solar-chevron">▼</span>
+        </div>
+        <div class="pp-solar-body" id="ppSolarBody">
+          <div class="form-row"><label>System Capacity (kW)</label><input type="number" id="pp_capacity" min="0" step="0.5" placeholder="0"></div>
+          <div class="form-row"><label>Panel Count</label><input type="number" id="pp_panel_count" min="0" step="1" placeholder="0"></div>
+          <div class="form-row"><label>Panel Wattage (W)</label><input type="number" id="pp_panel_wattage" min="0" step="50" placeholder="0"></div>
+          <div class="form-row"><label>Peak Sun Hours / day</label><input type="number" id="pp_sun_hours" min="0" max="12" step="0.5" value="5"></div>
+          <div class="form-row"><label>Default Run Hours / day</label><input type="number" id="pp_default_run" min="0" max="24" step="0.5" value="8"></div>
+          <!-- Per-phase budget -->
+          <div class="form-row" style="grid-column:1/-1">
+            <label style="margin-bottom:6px;display:block">House Phase Budget (kW) <span style="font-weight:400;color:var(--muted);font-size:0.72rem">— max allocated load per phase from your incoming supply. Leave 0 to disable warning.</span></label>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px">
+              <div class="form-row" style="margin-bottom:0">
+                <label style="color:#3b82f6;font-weight:700">L1 Budget (kW)</label>
+                <input type="number" id="pp_max_l1" min="0" step="0.5" placeholder="e.g. 7.5">
+              </div>
+              <div class="form-row" style="margin-bottom:0">
+                <label style="color:#f59e0b;font-weight:700">L2 Budget (kW)</label>
+                <input type="number" id="pp_max_l2" min="0" step="0.5" placeholder="e.g. 7.5">
+              </div>
+              <div class="form-row" style="margin-bottom:0">
+                <label style="color:#ef4444;font-weight:700">L3 Budget (kW)</label>
+                <input type="number" id="pp_max_l3" min="0" step="0.5" placeholder="e.g. 7.5">
+              </div>
+            </div>
+          </div>
+          <div class="form-row" style="grid-column:1/-1"><label>Notes</label><textarea id="pp_notes" rows="2" placeholder="Battery size, inverter brand, tariff details…"></textarea></div>
+          <div class="pp-solar-save">
+            <button class="btn-save" onclick="saveSolarConfig()">Save Config</button>
+            <div class="pp-solar-summary" id="ppSolarSummary"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase Balance Summary -->
+      <div class="pp-balance-wrap">
+        <div class="pp-balance-title">Phase Load Balance</div>
+        <div class="pp-balance-bars" id="ppBalanceBars"></div>
+        <div class="pp-balance-total" id="ppBalanceTotal"></div>
+      </div>
+
+      <!-- Load Board -->
+      <div class="section-header" style="margin-bottom:0">
+        <h3 style="font-size:0.9rem;font-weight:600">Electrical Load Board</h3>
+        <span style="font-size:0.78rem;color:var(--muted)">Drag items between phases and floors. Edit items via Inventory.</span>
+      </div>
+      <div class="pp-board" id="ppBoard"></div>
+
+    </div>
+  </div>
+
   <div class="page" id="page-scratchpad">
     <div class="section-header"><h2>Scratchpad</h2></div>
     <div class="page-guide">
@@ -1172,9 +1567,11 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
   </div>
 </div>
 
-<!-- ═══════════════ MODALS ═══════════════ -->
+    </div><!-- /pages-wrap -->
 
-<!-- Task Modal -->
+    <!-- ═══════════════ MODALS ═══════════════ -->
+
+    <!-- Task Modal -->
 <div class="modal-overlay" id="taskModal" style="display:none">
   <div class="modal">
     <h3 id="taskModalTitle">Task</h3>
@@ -1248,6 +1645,26 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
         <option>To Procure</option><option>Ordered</option><option>Delivered</option>
       </select></div>
     <div class="form-row"><label>Notes</label><textarea id="im_notes"></textarea></div>
+    <!-- Power Planner -->
+    <div class="form-row" style="margin-top:4px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
+        <input type="checkbox" id="im_power_planner" onchange="togglePPFields()" style="width:15px;height:15px;accent-color:#f59e0b">
+        <span>⚡ Add to Power Planner</span>
+      </label>
+    </div>
+    <div id="im_pp_fields" style="display:none;padding:8px 0 4px;border-top:1px dashed var(--border);margin-top:2px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px">
+        <div class="form-row"><label>Wattage (W)</label><input type="number" id="im_wattage" min="0" step="1" placeholder="0"></div>
+        <div class="form-row"><label>Floor</label>
+          <select id="im_floor">
+            <option value="level_1">Level 1</option>
+            <option value="ground">Ground Floor</option>
+            <option value="lower_ground">Lower Ground</option>
+            <option value="lower_ground_2">Lower Ground 2</option>
+          </select></div>
+        <div class="form-row"><label>Daily Run Hours</label><input type="number" id="im_run_hours" value="8" min="0" max="24" step="0.5"></div>
+      </div>
+    </div>
     <!-- Photos -->
     <div class="modal-photos">
       <div class="modal-photos-label">Files &amp; Attachments</div>
@@ -1407,7 +1824,8 @@ tbody td { padding: 10px 12px; vertical-align: middle; }
       <button class="btn-save" onclick="saveShortlistItem()">Save</button>
     </div>
   </div>
-</div>
+  </div><!-- /main-wrap -->
+</div><!-- /app -->
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -1477,13 +1895,19 @@ function selectUser(name) {
 
 function launchApp() {
   document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  // Set user pill
-  const pill = document.getElementById('userPill');
-  const cls  = S.user.toLowerCase();
-  pill.className = `user-pill ${cls}`;
-  pill.innerHTML = `<span class="dot"></span>${S.user}`;
+  document.getElementById('app').style.display = 'flex';
+  // Sidebar user indicator
+  const dot  = document.getElementById('sidebarUserDot');
+  const name = document.getElementById('sidebarUserName');
+  const color = S.user.toLowerCase() === 'marcus' ? 'var(--marcus)' : S.user.toLowerCase() === 'lucas' ? 'var(--lucas)' : 'var(--accent)';
+  if (dot)  { dot.style.background = color; }
+  if (name) { name.textContent = S.user; name.style.color = color; }
+  // Restore sidebar collapse state
+  const collapsed = localStorage.getItem('sidebarCollapsed');
+  const sb = document.getElementById('sidebar');
+  if (collapsed === '1' && sb) { sb.classList.add('collapsed'); const tog = sb.querySelector('.sidebar-toggle'); if (tog) tog.textContent = '›'; }
   loadAll();
+  loadChangelog();
 }
 
 function logout() {
@@ -1524,7 +1948,7 @@ async function api(method, url, body) {
 // LOAD ALL
 // ═══════════════════════════════════════════════════════════════
 async function loadAll() {
-  const [tr, ir, rr, sr, setr, acr, aft, afi, afr, slr, dr, ur, cr] = await Promise.all([
+  const [tr, ir, rr, sr, setr, acr, aft, afi, afr, slr, dr, ur, cr, solr] = await Promise.all([
     api('GET', '/api/tasks'),
     api('GET', '/api/inventory'),
     api('GET', '/api/reno'),
@@ -1537,19 +1961,21 @@ async function loadAll() {
     api('GET', '/api/shortlist'),
     api('GET', '/api/design'),
     api('GET', '/api/users'),
-    api('GET', '/api/contacts')
+    api('GET', '/api/contacts'),
+    api('GET', '/api/solar-config')
   ]);
-  S.tasks     = tr.tasks;
-  S.inventory = ir.items;
-  S.reno      = rr.works;
-  S.scratch   = sr.entries;
-  S.shortlist = slr.items;
-  S.settings  = setr.settings;
-  S.actCounts = acr.counts;
-  S.actFeeds  = { task: aft.entries, inventory: afi.entries, reno: afr.entries };
-  S.design    = dr.assets;
-  S.users     = ur.users.map(u => u.name);
-  S.contacts  = cr.contacts;
+  S.tasks      = tr.tasks;
+  S.inventory  = ir.items;
+  S.reno       = rr.works;
+  S.scratch    = sr.entries;
+  S.shortlist  = slr.items;
+  S.settings   = setr.settings;
+  S.actCounts  = acr.counts;
+  S.actFeeds   = { task: aft.entries, inventory: afi.entries, reno: afr.entries };
+  S.design     = dr.assets;
+  S.users      = ur.users.map(u => u.name);
+  S.contacts   = cr.contacts;
+  S.solarConfig = solr.config || {};
   renderAll();
 }
 
@@ -1561,6 +1987,7 @@ function renderAll() {
   renderReno();
   renderShortlist();
   renderContacts();
+  renderPowerPlanner();
   renderScratch();
   renderSettings();
   renderActivityPanel('task');
@@ -1569,16 +1996,40 @@ function renderAll() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// NAV
+// NAV / SIDEBAR
 // ═══════════════════════════════════════════════════════════════
+const PAGE_TITLES = {
+  dashboard: 'Dashboard', design: 'Home Design', tasks: 'Action Plan',
+  inventory: 'Inventory & Costing', power: 'Power Planner',
+  reno: 'Renovation Works', shortlist: 'Shortlist',
+  contacts: 'Contacts', scratchpad: 'Scratchpad', settings: 'Settings'
+};
+
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  const btns = document.querySelectorAll('.nav-btn');
-  const labels = ['dashboard','design','tasks','inventory','reno','shortlist','scratchpad','settings'];
-  const idx = labels.indexOf(id);
-  if (idx >= 0) btns[idx].classList.add('active');
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-page="${id}"]`);
+  if (btn) btn.classList.add('active');
+  const titleEl = document.getElementById('topbarTitle');
+  if (titleEl) titleEl.textContent = PAGE_TITLES[id] || id;
+  // Close mobile sidebar on navigation
+  const sb = document.getElementById('sidebar');
+  if (sb && sb.classList.contains('mobile-open')) sb.classList.remove('mobile-open');
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    sb.classList.toggle('mobile-open');
+  } else {
+    sb.classList.toggle('collapsed');
+    const tog = sb.querySelector('.sidebar-toggle');
+    if (tog) tog.textContent = sb.classList.contains('collapsed') ? '›' : '‹';
+    localStorage.setItem('sidebarCollapsed', sb.classList.contains('collapsed') ? '1' : '0');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1672,6 +2123,96 @@ function renderDashboard() {
       </div>`;
   });
   document.getElementById('dashPhases').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHANGELOG
+// ═══════════════════════════════════════════════════════════════
+let _changelogOffset = 0;
+const _changelogPageSize = 30;
+let _changelogTotal = 0;
+let _changelogEntries = [];
+let _changelogOpen = true;
+
+async function loadChangelog(append = false) {
+  const r = await api('GET', `/api/changelog?limit=${_changelogPageSize}&offset=${append ? _changelogOffset : 0}`);
+  if (!append) {
+    _changelogEntries = r.entries;
+    _changelogOffset  = r.entries.length;
+  } else {
+    _changelogEntries = _changelogEntries.concat(r.entries);
+    _changelogOffset += r.entries.length;
+  }
+  _changelogTotal = r.total;
+  renderChangelog();
+}
+
+function renderChangelog() {
+  const wrap = document.getElementById('dashChangelog');
+  if (!wrap) return;
+
+  const ENTITY_ICON  = { task: '✅', inventory: '📦', reno: '🔨' };
+  const ENTITY_LABEL = { task: 'Action Plan', inventory: 'Inventory', reno: 'Renovation' };
+
+  // Group entries by date
+  const groups = {};
+  const today     = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  _changelogEntries.forEach(e => {
+    const d   = new Date(e.timestamp);
+    const ds  = d.toDateString();
+    const key = ds === today ? 'Today' : ds === yesterday ? 'Yesterday' : d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    (groups[key] = groups[key] || []).push(e);
+  });
+
+  const bodyHtml = Object.entries(groups).map(([label, entries]) => `
+    <div class="changelog-date-group">
+      <div class="changelog-date-label">${label}</div>
+      ${entries.map(e => {
+        const authorCls = e.author === 'system' ? 'system' : e.author.toLowerCase();
+        const time = new Date(e.timestamp).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+        const openFn = e.entity_type === 'task' ? `openTaskModal('${e.entity_id}')` :
+                       e.entity_type === 'inventory' ? `openInvModal('${e.entity_id}')` :
+                       `openRenoModal('${e.entity_id}')`;
+        return `<div class="changelog-entry">
+          <span class="changelog-entry-icon">${ENTITY_ICON[e.entity_type] || '📝'}</span>
+          <div class="changelog-entry-body">
+            <span class="changelog-entity" onclick="${openFn}">${escHtml(e.entity_name || '—')}</span>
+            <span class="changelog-text"> — ${escHtml(e.text)}</span>
+            <div class="changelog-meta">
+              <span class="wn-author ${authorCls}">${escHtml(e.author === 'system' ? 'System' : e.author)}</span>
+              <span class="changelog-time"> · ${time} · ${ENTITY_LABEL[e.entity_type] || e.entity_type}</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+
+  const hasMore = _changelogOffset < _changelogTotal;
+  const footerHtml = hasMore
+    ? `<div class="changelog-load-more"><button onclick="loadChangelog(true)">Load more (${_changelogTotal - _changelogOffset} remaining)</button></div>`
+    : '';
+
+  wrap.innerHTML = `
+    <div class="changelog-wrap">
+      <div class="changelog-header ${_changelogOpen ? 'open' : ''}" onclick="toggleChangelog()">
+        <span style="font-size:1rem">📋</span>
+        <span class="changelog-title">Changelog</span>
+        <span class="changelog-count">${_changelogTotal} entries</span>
+        <span class="changelog-chevron">▼</span>
+      </div>
+      <div class="changelog-body ${_changelogOpen ? 'open' : ''}">
+        ${_changelogEntries.length ? bodyHtml + footerHtml : '<div style="padding:16px 20px;font-size:0.82rem;color:var(--muted)">No activity recorded yet.</div>'}
+      </div>
+    </div>`;
+}
+
+function toggleChangelog() {
+  _changelogOpen = !_changelogOpen;
+  const header = document.querySelector('.changelog-header');
+  const body   = document.querySelector('.changelog-body');
+  if (header) header.classList.toggle('open', _changelogOpen);
+  if (body)   body.classList.toggle('open', _changelogOpen);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1864,6 +2405,13 @@ function openInvModal(id) {
       document.getElementById('im_supplier').value = i.supplier;
       document.getElementById('im_status').value   = i.status;
       document.getElementById('im_notes').value    = i.notes;
+      // Power Planner fields
+      const pp = !!i.in_power_planner;
+      document.getElementById('im_power_planner').checked = pp;
+      document.getElementById('im_pp_fields').style.display = pp ? 'block' : 'none';
+      document.getElementById('im_wattage').value   = i.wattage || '';
+      document.getElementById('im_floor').value     = i.floor || 'level_1';
+      document.getElementById('im_run_hours').value = i.daily_run_hours != null ? i.daily_run_hours : 8;
     }
     loadModalActivity('inventory', id, 'im_actFeed');
   } else {
@@ -1871,6 +2419,12 @@ function openInvModal(id) {
     document.getElementById('im_qty').value   = 1;
     document.getElementById('im_price').value = 0;
     document.getElementById('im_status').value = 'To Procure';
+    // Reset power planner fields
+    document.getElementById('im_power_planner').checked = false;
+    document.getElementById('im_pp_fields').style.display = 'none';
+    document.getElementById('im_wattage').value   = '';
+    document.getElementById('im_floor').value     = 'level_1';
+    document.getElementById('im_run_hours').value = 8;
   }
   document.getElementById('invModal').style.display = 'flex';
 }
@@ -1886,7 +2440,12 @@ async function saveInv() {
     unit_price: parseFloat(document.getElementById('im_price').value) || 0,
     supplier:   document.getElementById('im_supplier').value,
     status:     document.getElementById('im_status').value,
-    notes:      document.getElementById('im_notes').value
+    notes:      document.getElementById('im_notes').value,
+    // Power Planner
+    in_power_planner: document.getElementById('im_power_planner').checked ? 1 : 0,
+    wattage:          parseInt(document.getElementById('im_wattage').value) || null,
+    floor:            document.getElementById('im_floor').value || 'level_1',
+    daily_run_hours:  parseFloat(document.getElementById('im_run_hours').value) || 8
   };
   if (currentInvId) {
     const old = S.inventory.find(x => x.id === currentInvId);
@@ -1904,7 +2463,7 @@ async function saveInv() {
     if (r.slItem) S.shortlist.push(r.slItem);
   }
   closeModal('invModal');
-  renderInventory(); renderShortlist(); renderDashboard();
+  renderInventory(); renderShortlist(); renderDashboard(); renderPowerPlanner();
 }
 
 async function deleteInv() {
@@ -1914,7 +2473,12 @@ async function deleteInv() {
   // Unlink any shortlist items that were confirmed from this inventory item
   S.shortlist.forEach(i => { if (i.inventory_id === currentInvId) { i.inventory_id = null; i.status = 'Shortlisted'; } });
   closeModal('invModal');
-  renderInventory(); renderShortlist(); renderDashboard();
+  renderInventory(); renderShortlist(); renderDashboard(); renderPowerPlanner();
+}
+
+function togglePPFields() {
+  document.getElementById('im_pp_fields').style.display =
+    document.getElementById('im_power_planner').checked ? 'block' : 'none';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2420,6 +2984,294 @@ function contactInitials(name) {
   if (parts.length === 1) return parts[0][0].toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// POWER PLANNER
+// ═══════════════════════════════════════════════════════════════
+
+const FLOOR_LABELS = {
+  level_1: 'Level 1', ground: 'Ground Floor',
+  lower_ground: 'Lower Ground', lower_ground_2: 'Lower Ground 2'
+};
+const FLOOR_ORDER = ['level_1', 'ground', 'lower_ground', 'lower_ground_2'];
+const PHASE_LABELS = { L1: 'L1', L2: 'L2', L3: 'L3', unassigned: 'Unassigned' };
+const PHASE_COLS = ['L1', 'L2', 'L3', 'unassigned'];
+let _ppSortables = [];
+
+function ppItems() {
+  return (S.inventory || []).filter(i => i.in_power_planner);
+}
+
+function ppKw(watts, runHours) {
+  return (watts || 0) * (runHours || 8) / 1000;
+}
+
+function ppPhaseWatts(phase) {
+  return ppItems().filter(i => (i.phase || 'unassigned') === phase)
+    .reduce((s, i) => s + (Number(i.wattage) || 0), 0);
+}
+
+function ppTotalWatts() {
+  return ppItems().reduce((s, i) => s + (Number(i.wattage) || 0), 0);
+}
+
+function ppTotalDailyKwh() {
+  return ppItems().reduce((s, i) => s + ppKw(i.wattage, i.daily_run_hours), 0);
+}
+
+function renderPowerPlanner() {
+  populateSolarConfigForm();
+  renderPhaseBar();
+  renderPPBoard();
+}
+
+function populateSolarConfigForm() {
+  const c = S.solarConfig || {};
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  set('pp_capacity',     c.system_capacity_kw || '');
+  set('pp_panel_count',  c.panel_count || '');
+  set('pp_panel_wattage',c.panel_wattage || '');
+  set('pp_sun_hours',    c.peak_sun_hours != null ? c.peak_sun_hours : 5);
+  set('pp_default_run',  c.default_run_hours != null ? c.default_run_hours : 8);
+  set('pp_max_l1', c.max_l1_kw || '');
+  set('pp_max_l2', c.max_l2_kw || '');
+  set('pp_max_l3', c.max_l3_kw || '');
+  set('pp_notes',        c.notes || '');
+  renderSolarSummary();
+}
+
+function renderSolarSummary() {
+  const el = document.getElementById('ppSolarSummary');
+  if (!el) return;
+  const c = S.solarConfig || {};
+  const cap = Number(c.system_capacity_kw) || 0;
+  const sun = Number(c.peak_sun_hours) || 5;
+  const estDaily = cap * sun;
+  const load = ppTotalDailyKwh();
+  const offset = cap > 0 ? Math.min(100, Math.round(estDaily / (load || 1) * 100)) : 0;
+  el.innerHTML = cap > 0
+    ? `<span>Est. daily generation: <strong>${estDaily.toFixed(1)} kWh</strong></span>
+       <span>Total load: <strong>${load.toFixed(1)} kWh/day</strong></span>
+       <span class="pp-solar-offset">☀️ ~${offset}% offset by solar</span>`
+    : `<span style="color:var(--muted)">Enter system capacity to see solar offset estimates.</span>`;
+}
+
+async function saveSolarConfig() {
+  const body = {
+    system_capacity_kw: parseFloat(document.getElementById('pp_capacity').value) || 0,
+    panel_count:        parseInt(document.getElementById('pp_panel_count').value) || 0,
+    panel_wattage:      parseInt(document.getElementById('pp_panel_wattage').value) || 0,
+    peak_sun_hours:        parseFloat(document.getElementById('pp_sun_hours').value) || 5,
+    default_run_hours:     parseFloat(document.getElementById('pp_default_run').value) || 8,
+    max_l1_kw: parseFloat(document.getElementById('pp_max_l1').value) || 0,
+    max_l2_kw: parseFloat(document.getElementById('pp_max_l2').value) || 0,
+    max_l3_kw: parseFloat(document.getElementById('pp_max_l3').value) || 0,
+    notes:                 document.getElementById('pp_notes').value
+  };
+  const r = await api('POST', '/api/solar-config', body);
+  S.solarConfig = r.config;
+  renderSolarSummary();
+  renderPhaseBar();
+}
+
+function togglePPSolar() {
+  const header = document.getElementById('ppSolarHeader');
+  const body   = document.getElementById('ppSolarBody');
+  if (!header || !body) return;
+  header.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+function renderPhaseBar() {
+  const container = document.getElementById('ppBalanceBars');
+  const totalEl   = document.getElementById('ppBalanceTotal');
+  if (!container) return;
+
+  const totalW   = ppTotalWatts() || 1;
+  const totalKwh = ppTotalDailyKwh();
+  const c        = S.solarConfig || {};
+  const estGen   = (Number(c.system_capacity_kw) || 0) * (Number(c.peak_sun_hours) || 5);
+  // Per-phase budgets (0 = not configured for that phase)
+  const phaseBudget = { L1: Number(c.max_l1_kw) || 0, L2: Number(c.max_l2_kw) || 0, L3: Number(c.max_l3_kw) || 0, unassigned: 0 };
+
+  const colors = { L1: 'l1', L2: 'l2', L3: 'l3', unassigned: 'unassigned' };
+  const labels = { L1: 'L1', L2: 'L2', L3: 'L3', unassigned: 'Unassigned' };
+
+  let overloadWarnings = [];
+
+  container.innerHTML = PHASE_COLS.map(phase => {
+    const w      = ppPhaseWatts(phase);
+    const kw     = w / 1000;
+    const maxKw  = phaseBudget[phase];
+    const hasBudget = maxKw > 0;
+    const pct    = hasBudget ? Math.min(100, Math.round(kw / maxKw * 100)) : Math.round(w / totalW * 100);
+    const isOver = hasBudget && kw > maxKw;
+    if (isOver) overloadWarnings.push(`${labels[phase]}: ${kw.toFixed(2)} kW`);
+
+    return `<div class="pp-phase-bar-col">
+      <div class="pp-phase-label">
+        <span class="pp-dot ${colors[phase]}" style="margin-right:4px"></span>
+        <span>${labels[phase]}</span>
+        ${isOver ? `<span style="color:#ef4444;font-size:0.7rem;font-weight:700;margin-left:4px">⚠ OVER</span>` : ''}
+        <span class="pp-phase-kw">${kw.toFixed(2)} kW${hasBudget ? ` / ${maxKw} kW` : ` (${pct}%)`}</span>
+      </div>
+      <div class="pp-bar-track" style="position:relative">
+        <div class="pp-bar-fill ${colors[phase]}" style="width:${pct}%;${isOver ? 'background:#ef4444' : ''}"></div>
+        ${hasBudget ? `<div style="position:absolute;right:0;top:0;width:2px;height:100%;background:rgba(255,255,255,0.25);border-radius:2px"></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  if (totalEl) {
+    const totalKw = (ppTotalWatts() / 1000).toFixed(2);
+    let html = `Total connected load: <strong>${totalKw} kW</strong> &nbsp;·&nbsp; Est. daily use: <strong>${totalKwh.toFixed(1)} kWh/day</strong>`;
+    if (estGen > 0) html += `<span class="pp-solar-offset"> ☀️ ${estGen.toFixed(1)} kWh/day generated</span>`;
+    if (overloadWarnings.length) {
+      html += `<span style="color:#ef4444;font-weight:600;margin-left:12px">⚠ Overload: ${overloadWarnings.join(', ')}</span>`;
+    }
+    totalEl.innerHTML = html;
+  }
+}
+
+function renderPPBoard() {
+  const board = document.getElementById('ppBoard');
+  if (!board) return;
+
+  // Destroy old sortables
+  _ppSortables.forEach(s => s.destroy());
+  _ppSortables = [];
+
+  const items = ppItems();
+  const floorItemCount = {};
+  FLOOR_ORDER.forEach(f => { floorItemCount[f] = items.filter(i => (i.floor || 'level_1') === f).length; });
+
+  board.innerHTML = FLOOR_ORDER.map(floor => {
+    const count = floorItemCount[floor];
+    const totalW = items.filter(i => (i.floor || 'level_1') === floor)
+      .reduce((s, i) => s + (Number(i.wattage) || 0), 0);
+    return `<div class="pp-floor-accordion" id="ppFloor_${floor}">
+      <div class="pp-floor-header" onclick="togglePPFloor('${floor}')">
+        <span>🏠</span>
+        <span>${FLOOR_LABELS[floor]}</span>
+        <span class="pp-floor-stats">${count} item${count !== 1 ? 's' : ''} · ${(totalW/1000).toFixed(2)} kW</span>
+        <span class="pp-floor-chevron">▼</span>
+      </div>
+      <div class="pp-floor-body open" id="ppFloorBody_${floor}">
+        <div class="pp-columns">
+          ${PHASE_COLS.map(phase => `
+            <div>
+              <div class="pp-col-header ${phase.toLowerCase()}">
+                <span class="pp-dot ${phase.toLowerCase()}"></span>
+                ${PHASE_LABELS[phase]}
+                <span class="pp-col-kw" id="ppColKw_${floor}_${phase}"></span>
+              </div>
+              <div class="pp-drop-zone" id="ppDrop_${floor}_${phase}" data-floor="${floor}" data-phase="${phase}">
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Populate cards
+  items.forEach(item => {
+    const floor = item.floor || 'level_1';
+    const phase = item.phase || 'unassigned';
+    const zone = document.getElementById(`ppDrop_${floor}_${phase}`);
+    if (zone) zone.appendChild(makePPCard(item));
+  });
+
+  // Update column kW labels
+  updatePPColKw();
+
+  // Init SortableJS on every drop zone
+  document.querySelectorAll('.pp-drop-zone').forEach(zone => {
+    const s = Sortable.create(zone, {
+      group: 'pp-items',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      dragClass: 'sortable-drag',
+      onOver(evt) { evt.to.classList.add('sortable-over'); },
+      onLeave(evt) { evt.to.classList.remove('sortable-over'); },
+      onEnd(evt) {
+        evt.to.classList.remove('sortable-over');
+        const newFloor = evt.to.dataset.floor;
+        const newPhase = evt.to.dataset.phase;
+        const itemId   = evt.item.dataset.id;
+        const item = S.inventory.find(x => x.id === itemId);
+        if (!item) return;
+        item.floor = newFloor;
+        item.phase = newPhase;
+        api('PUT', `/api/inventory/${itemId}`, {
+          floor: newFloor, phase: newPhase,
+          in_power_planner: 1,
+          category: item.category, name: item.name
+        }).then(() => {
+          updatePPColKw();
+          renderPhaseBar();
+        });
+      }
+    });
+    _ppSortables.push(s);
+  });
+}
+
+function makePPCard(item) {
+  const div = document.createElement('div');
+  div.className = 'pp-card';
+  div.dataset.id = item.id;
+  const kwhDay = ppKw(item.wattage, item.daily_run_hours);
+  div.innerHTML = `
+    <div class="pp-card-name">${item.name}</div>
+    <div class="pp-card-meta">
+      <span class="pp-card-watts">${item.wattage || 0}W</span>
+      <span class="pp-card-kwh">~${kwhDay.toFixed(2)} kWh/day</span>
+      <button class="pp-card-edit" onclick="openInvModal('${item.id}')" title="Edit in Inventory">✏️</button>
+    </div>
+    <select class="pp-card-phase-sel" onchange="ppChangePhaseMobile('${item.id}', this.value)">
+      <option value="L1" ${(item.phase||'unassigned')==='L1'?'selected':''}>L1</option>
+      <option value="L2" ${(item.phase||'unassigned')==='L2'?'selected':''}>L2</option>
+      <option value="L3" ${(item.phase||'unassigned')==='L3'?'selected':''}>L3</option>
+      <option value="unassigned" ${(!item.phase||item.phase==='unassigned')?'selected':''}>Unassigned</option>
+    </select>`;
+  return div;
+}
+
+function updatePPColKw() {
+  const items = ppItems();
+  FLOOR_ORDER.forEach(floor => {
+    PHASE_COLS.forEach(phase => {
+      const el = document.getElementById(`ppColKw_${floor}_${phase}`);
+      if (!el) return;
+      const w = items.filter(i => (i.floor||'level_1') === floor && (i.phase||'unassigned') === phase)
+        .reduce((s, i) => s + (Number(i.wattage) || 0), 0);
+      el.textContent = w > 0 ? `${(w/1000).toFixed(2)} kW` : '';
+    });
+  });
+}
+
+function togglePPFloor(floor) {
+  const header = document.querySelector(`#ppFloor_${floor} .pp-floor-header`);
+  const body   = document.getElementById(`ppFloorBody_${floor}`);
+  if (!header || !body) return;
+  header.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+async function ppChangePhaseMobile(itemId, newPhase) {
+  const item = S.inventory.find(x => x.id === itemId);
+  if (!item) return;
+  item.phase = newPhase;
+  await api('PUT', `/api/inventory/${itemId}`, {
+    phase: newPhase, floor: item.floor || 'level_1',
+    in_power_planner: 1, category: item.category, name: item.name
+  });
+  renderPowerPlanner();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONTACTS
+// ═══════════════════════════════════════════════════════════════
 
 function renderContacts() {
   const grid = document.getElementById('contactsGrid');
@@ -2993,6 +3845,7 @@ async function postActivityModal(et, eid) {
   if (inputEl) inputEl.value = '';
   await loadModalActivity(et, eid, feedMap[et]);
   refreshActFeed(et);
+  loadChangelog();
 }
 
 async function deleteActivity(id, et, eid, feedId) {
@@ -3010,6 +3863,7 @@ async function autoLog(et, eid, text) {
     const key = et + ':' + eid;
     S.actCounts[key] = (S.actCounts[key] || 0) + 1;
     refreshActFeed(et);
+    loadChangelog(); // refresh changelog on dashboard
   } catch(e) { /* silent */ }
 }
 
